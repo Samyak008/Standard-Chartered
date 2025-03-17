@@ -1,8 +1,20 @@
 import logging
+import sys
+import os
+from pathlib import Path
+
+# Add the parent directory to sys.path to allow absolute imports
+sys.path.append(str(Path(__file__).parent.parent))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
-from .controllers import user_controller, webrtc_controller
+# Load environment variables
+load_dotenv()
+
+# Import controllers - use absolute imports instead of relative
+from backend.controllers import user_controller, webrtc_controller
 
 # Configure logging
 logging.basicConfig(
@@ -31,4 +43,9 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    
+    port = int(os.getenv("PORT", 8000))
+    host = os.getenv("HOST", "0.0.0.0")
+    debug = os.getenv("DEBUG", "True").lower() == "true"
+    
+    uvicorn.run("app:app", host=host, port=port, reload=debug)

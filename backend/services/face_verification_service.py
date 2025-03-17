@@ -5,18 +5,30 @@ import time
 from typing import Tuple, Dict, Optional
 from deepface import DeepFace
 import cv2
+import os
+from dotenv import load_dotenv
 
-from .webrtc_service import reference_images
+# Load environment variables
+load_dotenv()
 
+# Avoid circular import
+# Instead of importing reference_images directly, we'll define a function to get them
 logger = logging.getLogger(__name__)
 
 # Store verification results
 verification_results: Dict[str, Dict] = {}
 
-# Configuration
-VERIFICATION_THRESHOLD = 0.8  # Confidence threshold for face verification
-FACE_DETECTION_MODEL = "opencv"  # Options: opencv, ssd, dlib, mtcnn, retinaface
-FACE_RECOGNITION_MODEL = "Facenet"  # Options: VGG-Face, Facenet, OpenFace, DeepFace, etc.
+# Configuration from .env
+VERIFICATION_THRESHOLD = float(os.getenv("VERIFICATION_THRESHOLD", "0.8"))
+FACE_DETECTION_MODEL = os.getenv("FACE_DETECTION_MODEL", "opencv")
+FACE_RECOGNITION_MODEL = os.getenv("FACE_RECOGNITION_MODEL", "Facenet")
+
+# Function to get reference images from another module
+def get_reference_image(session_id: str) -> Optional[np.ndarray]:
+    """Get reference image for a session."""
+    # Importing here to avoid circular imports
+    from backend.services.webrtc_service import reference_images
+    return reference_images.get(session_id)
 
 async def verify_face(session_id: str, current_frame: np.ndarray) -> Tuple[bool, float]:
     """
@@ -29,11 +41,10 @@ async def verify_face(session_id: str, current_frame: np.ndarray) -> Tuple[bool,
     Returns:
         Tuple of (is_verified, confidence_score)
     """
-    if session_id not in reference_images:
+    reference_img = get_reference_image(session_id)
+    if reference_img is None:
         logger.warning(f"No reference image found for session {session_id}")
         return False, 0.0
-    
-    reference_img = reference_images[session_id]
     
     # Use threaded executor for CPU-bound face verification
     loop = asyncio.get_event_loop()

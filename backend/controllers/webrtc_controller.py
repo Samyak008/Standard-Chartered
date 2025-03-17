@@ -7,16 +7,29 @@ from typing import Dict, Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from aiortc import RTCSessionDescription
 
-from ..services.webrtc_service import process_offer, cleanup_peer_connection
-from ..services.face_verification_service import verify_face, get_last_verification_result
-from ..services.audio_service import AudioTranscriber
-from ..services.ai_chatbot_service import LoanAdvisorBot
+# Use absolute imports
+from backend.services.webrtc_service import process_offer, cleanup_peer_connection
+from backend.services.face_verification_service import verify_face, get_last_verification_result
+from backend.services.audio_service import AudioTranscriber
+from backend.services.ai_chatbot_service import LoanAdvisorBot
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 # Active websocket connections
 active_connections: Dict[str, WebSocket] = {}
+
+@router.get("/")
+async def get_webrtc_root():
+    """Root endpoint for WebRTC API."""
+    return {
+        "message": "WebRTC API is available",
+        "endpoints": [
+            {"path": "/start-video-call", "method": "POST", "description": "Start a new video call session"},
+            {"path": "/ws/rtc/{session_id}", "method": "WebSocket", "description": "WebSocket endpoint for WebRTC signaling"},
+            {"path": "/ws/verify-face-live/{session_id}", "method": "WebSocket", "description": "WebSocket for live face verification feedback"}
+        ]
+    }
 
 @router.websocket("/ws/rtc/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
