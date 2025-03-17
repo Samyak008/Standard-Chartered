@@ -1,0 +1,13 @@
+FastAPI
+Flask
+uvicorn
+opencv-python
+pytesseract
+numpy
+sqlalchemy
+pydantic
+python-dotenv
+requests
+pytest
+pytest-cov
+mypy
