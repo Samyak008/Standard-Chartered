@@ -1,36 +1,34 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from controllers.user_controller import UserController
 
-app = FastAPI()
+from .controllers import user_controller, webrtc_controller
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+app = FastAPI(title="Virtual Branch Manager API")
 
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this as needed for production
+    allow_origins=["*"],  # In production, replace with specific origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize UserController
-user_controller = UserController()
+# Include routers
+app.include_router(user_controller.router, prefix="/api/users", tags=["users"])
+app.include_router(webrtc_controller.router, prefix="/api/webrtc", tags=["webrtc"])
 
-# API routes
-@app.post("/register")
-async def register_user(user_data: dict):
-    return await user_controller.register_user(user_data)
-
-@app.post("/login")
-async def login_user(credentials: dict):
-    return await user_controller.login_user(credentials)
-
-@app.post("/upload")
-async def upload_document(document: dict):
-    return await user_controller.upload_document(document)
-
-# Add more routes as needed
+@app.get("/")
+async def root():
+    return {"message": "Virtual Branch Manager API is running"}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

@@ -1,5 +1,4 @@
 FastAPI
-Flask
 uvicorn
 opencv-python
 pytesseract
@@ -11,3 +10,18 @@ requests
 pytest
 pytest-cov
 mypy
+# WebRTC and WebSocket dependencies
+aiortc
+websockets
+# Face recognition
+deepface
+facenet-pytorch
+# Audio processing
+whisper-openai
+vosk
+# Async processing
+celery
+redis
+# Machine Learning
+tensorflow
+torch
