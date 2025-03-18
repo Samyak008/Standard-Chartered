@@ -28,20 +28,46 @@ export default function AuthForm({ type }) {
     setError(null);
 
     try {
-      // Registration logic remains the same
+      // Registration logic
+      if (type === "register") {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          body: JSON.stringify(formData),
+          headers: { "Content-Type": "application/json" },
+        });
 
-      // Login logic with callbackUrl
-      const result = await signIn("credentials", {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
-      });
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Registration failed");
+        }
 
-      if (result?.error) {
-        throw new Error(result.error || "Authentication failed");
+        // After successful registration, automatically sign in
+        const signInResult = await signIn("credentials", {
+          email: formData.email,
+          password: formData.password,
+          redirect: false,
+        });
+
+        if (signInResult?.error) {
+          throw new Error(
+            signInResult.error ||
+              "Registration successful but couldn't sign in automatically"
+          );
+        }
+      } else {
+        // Login logic for existing users
+        const result = await signIn("credentials", {
+          email: formData.email,
+          password: formData.password,
+          redirect: false,
+        });
+
+        if (result?.error) {
+          throw new Error(result.error || "Authentication failed");
+        }
       }
 
-      // Use the global NextAuth session check to redirect
+      // After successful login/registration, check session and redirect
       const session = await fetch("/api/auth/session").then((res) =>
         res.json()
       );

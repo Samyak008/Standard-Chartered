@@ -141,52 +141,6 @@ export default function UserDashboard() {
         </div>
 
         {/* Account Summary Card */}
-        <div className="backdrop-blur-md bg-indigo-600/10 p-6 rounded-xl border border-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300 shadow-lg">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Account Summary
-              </h3>
-              <p className="text-sm text-gray-300 mb-4">
-                Your financial overview
-              </p>
-              <div className="inline-block text-sm bg-indigo-600/20 text-indigo-400 px-3 py-1 rounded-full">
-                Active
-              </div>
-            </div>
-            <div className="bg-indigo-600/20 p-3 rounded-lg">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-7 w-7 text-indigo-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            </div>
-          </div>
-          <div className="mt-4 text-indigo-400 hover:text-indigo-300 transition-colors flex items-center text-sm">
-            View details
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 ml-1"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
-        </div>
       </div>
 
       {/* Welcome message */}

@@ -48,15 +48,13 @@ export default function LoginPage() {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-white ml-3">
-                Standard Chartered
-              </h1>
+              <h1 className="text-2xl font-bold text-white ml-3">Loanly</h1>
             </div>
 
             <div className="mt-16">
               <h2 className="text-3xl font-bold text-white mb-6">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-                  Banking that goes beyond expectations
+                  Your personalized loan companion
                 </span>
               </h2>
               <p className="text-gray-300 mb-8">

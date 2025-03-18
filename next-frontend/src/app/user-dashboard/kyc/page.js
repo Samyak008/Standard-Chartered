@@ -2,12 +2,22 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import PersonalDetailsForm from "@/components/kyc/PersonalDetailsForm";
+import DocumentVerification from "@/components/kyc/DocumentVerification";
+import FaceVerification from "@/components/kyc/FaceVerification";
+import VerificationComplete from "@/components/kyc/VerificationComplete";
 
 export default function KycVerificationPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState({
+    personal: {},
+    documents: {},
+    faceVerification: false,
+  });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -15,6 +25,23 @@ export default function KycVerificationPage() {
       router.push("/auth/login");
     }
   }, [status, router]);
+
+  const handleNextStep = () => {
+    setCurrentStep((prev) => prev + 1);
+  };
+
+  const handlePrevStep = () => {
+    setCurrentStep((prev) => Math.max(1, prev - 1));
+  };
+
+  const updateFormData = (step, data) => {
+    setFormData((prev) => {
+      if (step === 1) return { ...prev, personal: data };
+      if (step === 2) return { ...prev, documents: data };
+      if (step === 3) return { ...prev, faceVerification: data };
+      return prev;
+    });
+  };
 
   // Show loading state while checking authentication
   if (status === "loading") {
@@ -27,6 +54,53 @@ export default function KycVerificationPage() {
       </div>
     );
   }
+
+  // Render step progress indicator
+  const renderStepIndicator = () => {
+    return (
+      <div className="flex items-center justify-center mb-8">
+        {[1, 2, 3, 4].map((step) => (
+          <div key={step} className="flex items-center">
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                currentStep === step
+                  ? "bg-blue-600 text-white"
+                  : currentStep > step
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-700 text-gray-400"
+              }`}
+            >
+              {currentStep > step ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                step
+              )}
+            </div>
+            {step < 4 && (
+              <div
+                className={`w-12 h-1 ${
+                  currentStep > step ? "bg-green-600" : "bg-gray-700"
+                }`}
+              ></div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <DashboardLayout>
@@ -77,26 +151,70 @@ export default function KycVerificationPage() {
             </div>
             <div>
               <h3 className="text-xl font-semibold text-white">
-                Verification Required
+                {currentStep < 4
+                  ? "Verification In Progress"
+                  : "Verification Complete"}
               </h3>
               <p className="text-gray-300 mt-1">
-                Please complete the verification process to access all banking
-                services.
+                {currentStep < 4
+                  ? "Please complete all steps of the verification process."
+                  : "Your identity has been verified successfully!"}
               </p>
             </div>
           </div>
         </div>
 
-        {/* KYC Form will go here - you'll implement this part */}
-        <div className="backdrop-blur-md bg-gray-800/50 p-6 rounded-xl border border-gray-700/50">
-          <h3 className="text-xl font-semibold text-white mb-6">
-            Personal Information
-          </h3>
+        {/* Step indicator */}
+        {renderStepIndicator()}
 
-          {/* You'll implement the form here */}
-          <div className="p-8 text-center text-gray-400">
-            <p>KYC verification form will be implemented here.</p>
-          </div>
+        {/* Multi-step form content */}
+        <div className="backdrop-blur-md bg-gray-800/50 p-6 rounded-xl border border-gray-700/50">
+          {currentStep === 1 && (
+            <div>
+              <h3 className="text-xl font-semibold text-white mb-6">
+                Personal Information
+              </h3>
+              <PersonalDetailsForm
+                onNextStep={handleNextStep}
+                updateFormData={(data) => updateFormData(1, data)}
+              />
+            </div>
+          )}
+
+          {currentStep === 2 && (
+            <div>
+              <h3 className="text-xl font-semibold text-white mb-6">
+                Document Verification
+              </h3>
+              <DocumentVerification
+                onNextStep={handleNextStep}
+                onPrevStep={handlePrevStep}
+                updateFormData={(data) => updateFormData(2, data)}
+              />
+            </div>
+          )}
+
+          {currentStep === 3 && (
+            <div>
+              <h3 className="text-xl font-semibold text-white mb-6">
+                Face Verification
+              </h3>
+              <FaceVerification
+                onNextStep={handleNextStep}
+                onPrevStep={handlePrevStep}
+                updateFormData={(data) => updateFormData(3, data)}
+              />
+            </div>
+          )}
+
+          {currentStep === 4 && (
+            <div>
+              <h3 className="text-xl font-semibold text-white mb-6">
+                Verification Complete
+              </h3>
+              <VerificationComplete formData={formData} />
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

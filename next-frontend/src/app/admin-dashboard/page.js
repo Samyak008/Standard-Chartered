@@ -63,7 +63,7 @@ export default function AdminDashboard() {
             <p className="text-lg mb-3">
               Admin dashboard functionality will be implemented later.
             </p>
-            <p>You'll build this section yourself.</p>
+            <p> you will build this section yourself.</p>
           </div>
         </div>
       </div>
