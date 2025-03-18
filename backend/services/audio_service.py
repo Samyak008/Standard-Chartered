@@ -2,9 +2,10 @@ import asyncio
 import logging
 import numpy as np
 import whisper
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Callable
 from vosk import Model, KaldiRecognizer
 import json
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -30,16 +31,18 @@ except Exception as e:
 class AudioTranscriber:
     """Transcribes audio using either Whisper or Vosk."""
     
-    def __init__(self, session_id: str, use_whisper: bool = False):
+    def __init__(self, session_id: str, use_whisper: bool = False, callback: Optional[Callable] = None):
         """
         Initialize audio transcriber.
         
         Args:
             session_id: Unique session identifier
             use_whisper: Whether to use Whisper (more accurate but slower) over Vosk
+            callback: Optional callback function to process transcribed text
         """
         self.session_id = session_id
         self.use_whisper = use_whisper
+        self.callback = callback
         self.buffer = []
         
         # Initialize session transcriptions
@@ -91,8 +94,9 @@ class AudioTranscriber:
                 transcriptions[self.session_id].append(text)
                 logger.info(f"Whisper transcription: {text}")
                 
-                # Forward to the chatbot for processing
-                await self.forward_to_chatbot(text)
+                # Forward to the callback for processing
+                if self.callback:
+                    await self.callback(text)
                 
         except Exception as e:
             logger.error(f"Whisper transcription error: {str(e)}")
@@ -114,16 +118,43 @@ class AudioTranscriber:
                     transcriptions[self.session_id].append(text)
                     logger.info(f"Vosk transcription: {text}")
                     
-                    # Forward to the chatbot for processing
-                    await self.forward_to_chatbot(text)
+                    # Forward to the callback for processing
+                    if self.callback:
+                        await self.callback(text)
                     
         except Exception as e:
             logger.error(f"Vosk transcription error: {str(e)}")
-    
-    async def forward_to_chatbot(self, text: str):
-        """Forward transcribed text to the chatbot service."""
-        # This will be implemented in the AI chatbot service
-        pass
+
+    async def process_audio_with_openai(self, audio_data: bytes) -> str:
+        """Use OpenAI Whisper API for better transcription when network is available"""
+        try:
+            from openai import OpenAI
+            client = OpenAI()
+            
+            # Save temporary audio file
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+                temp_file.write(audio_data)
+                temp_path = temp_file.name
+            
+            # Use OpenAI API
+            with open(temp_path, "rb") as audio_file:
+                transcript = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file
+                )
+            
+            # Clean up temp file
+            os.unlink(temp_path)
+            
+            return transcript.text
+            
+        except Exception as e:
+            logger.error(f"OpenAI Whisper API error: {str(e)}")
+            # Fall back to local Whisper if API fails
+            if whisper_model:
+                return self.transcribe_whisper_local(audio_data)
+            return ""
 
 async def get_session_transcriptions(session_id: str) -> List[str]:
     """Get all transcriptions for a session."""

@@ -2,6 +2,8 @@ import asyncio
 import json
 import logging
 import uuid
+import os
+import time
 from typing import Dict, Optional
 
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
@@ -10,6 +12,7 @@ import cv2
 import numpy as np
 
 from .face_verification_service import verify_face as verify_face_service
+from .audio_service import AudioTranscriber
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +20,8 @@ logger = logging.getLogger(__name__)
 peer_connections: Dict[str, RTCPeerConnection] = {}
 # Store reference images for face verification
 reference_images: Dict[str, np.ndarray] = {}
+# Store transcribers
+audio_transcribers: Dict[str, AudioTranscriber] = {}
 
 class VideoReceiver:
     """Handles receiving video frames from the client."""
@@ -150,6 +155,54 @@ class VideoReceiver:
             logger.error(f"Error extracting face: {str(e)}")
             return None
 
+    # Add recording capability for compliance and audit
+
+    async def start_recording(self, session_id: str):
+        """Start recording the session for compliance purposes"""
+        output_path = f"recordings/{session_id}_{int(time.time())}.mp4"
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        self.media_recorder = MediaRecorder(output_path)
+        await self.media_recorder.start()
+        logger.info(f"Started recording session {session_id} to {output_path}")
+        return output_path
+
+    async def stop_recording(self):
+        """Stop recording the session"""
+        if hasattr(self, 'media_recorder'):
+            await self.media_recorder.stop()
+            logger.info("Recording stopped")
+
+class AudioReceiver:
+    """Handles receiving audio frames from the client."""
+    
+    def __init__(self, session_id: str):
+        """
+        Initialize audio receiver.
+        
+        Args:
+            session_id: Unique session identifier
+        """
+        self.session_id = session_id
+    
+    async def receive_track(self, track):
+        """Process incoming audio track."""
+        transcriber = audio_transcribers.get(self.session_id)
+        
+        while True:
+            try:
+                frame = await track.recv()
+                
+                # Forward to transcriber if available
+                if (transcriber):
+                    # Convert audio to numpy array
+                    audio_array = frame.to_ndarray()
+                    await transcriber.process_audio(audio_array)
+                
+            except Exception as e:
+                logger.error(f"Error in audio processing: {str(e)}")
+                break
+
 async def create_peer_connection(session_id: str) -> RTCPeerConnection:
     """Create a new WebRTC peer connection."""
     pc = RTCPeerConnection()
@@ -174,6 +227,9 @@ async def cleanup_peer_connection(session_id: str):
     if session_id in reference_images:
         del reference_images[session_id]
     
+    if session_id in audio_transcribers:
+        del audio_transcribers[session_id]
+    
     logger.info(f"Cleaned up session {session_id}")
 
 async def process_offer(session_id: str, offer: RTCSessionDescription) -> RTCSessionDescription:
@@ -189,12 +245,15 @@ async def process_offer(session_id: str, offer: RTCSessionDescription) -> RTCSes
     """
     pc = await create_peer_connection(session_id)
     video_receiver = VideoReceiver(session_id)
+    audio_receiver = AudioReceiver(session_id)
     
     @pc.on("track")
     async def on_track(track):
         logger.info(f"Track received: {track.kind}")
         if track.kind == "video":
             asyncio.create_task(video_receiver.receive_track(track))
+        elif track.kind == "audio":
+            asyncio.create_task(audio_receiver.receive_track(track))
     
     # Set the remote description
     await pc.setRemoteDescription(offer)
@@ -204,3 +263,8 @@ async def process_offer(session_id: str, offer: RTCSessionDescription) -> RTCSes
     await pc.setLocalDescription(answer)
     
     return pc.localDescription
+
+# Add function to set transcriber for a session
+def set_audio_transcriber(session_id: str, transcriber: AudioTranscriber):
+    """Set the audio transcriber for a session."""
+    audio_transcribers[session_id] = transcriber

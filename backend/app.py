@@ -18,6 +18,7 @@ load_dotenv()
 # Import controllers - use absolute imports instead of relative
 from backend.controllers import user_controller, webrtc_controller
 from backend.models import chatbot_flow
+from backend.controllers import video_kyc_controller
 
 # Configure logging
 logging.basicConfig(
@@ -40,11 +41,17 @@ app.add_middleware(
 app.include_router(user_controller.router, prefix="/api/users", tags=["users"])
 app.include_router(webrtc_controller.router, prefix="/api/webrtc", tags=["webrtc"])
 app.include_router(chatbot_flow.router, prefix="/api/kyc", tags=["kyc"])
+app.include_router(video_kyc_controller.router, prefix="/api/video-kyc", tags=["video-kyc"])
 
 @app.get("/test-client")
 async def get_test_client():
     """Serve the test client HTML page"""
     return FileResponse("backend/test_client.html")
+
+@app.get("/video-kyc-client")
+async def video_kyc_client():
+    """Serve the Video KYC client page"""
+    return FileResponse("backend/video_kyc_client.html")
 
 @app.get("/")
 async def root():

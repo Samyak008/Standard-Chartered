@@ -36,3 +36,6 @@ torch
 langchain
 langchain-community
 langchain-openai
+
+
+starlette
