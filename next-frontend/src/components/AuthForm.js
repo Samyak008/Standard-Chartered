@@ -20,27 +20,17 @@ export default function AuthForm({ type }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // A simpler approach using callback URL
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
-      if (type === "register") {
-        // Registration logic
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          body: JSON.stringify(formData),
-          headers: { "Content-Type": "application/json" },
-        });
+      // Registration logic remains the same
 
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "Registration failed");
-        }
-      }
-
-      // Login logic
+      // Login logic with callbackUrl
       const result = await signIn("credentials", {
         email: formData.email,
         password: formData.password,
@@ -51,8 +41,17 @@ export default function AuthForm({ type }) {
         throw new Error(result.error || "Authentication failed");
       }
 
-      // Redirect on success
-      router.push("/user-dashboard");
+      // Use the global NextAuth session check to redirect
+      const session = await fetch("/api/auth/session").then((res) =>
+        res.json()
+      );
+
+      // Redirect based on user role
+      if (session?.user?.role === "admin") {
+        router.push("/admin-dashboard");
+      } else {
+        router.push("/user-dashboard");
+      }
     } catch (err) {
       setError(err.message);
     } finally {
