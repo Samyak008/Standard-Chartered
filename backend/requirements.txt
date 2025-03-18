@@ -30,12 +30,14 @@ redis
 
 # Machine Learning
 tensorflow
+tf-keras
 torch
 
 # NLP and Chatbot
 langchain
 langchain-community
 langchain-openai
+langchain-qroq
 
 
 starlette

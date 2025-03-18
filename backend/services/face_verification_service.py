@@ -19,14 +19,14 @@ verification_results: Dict[str, Dict] = {}
 # Configuration from .env - use stricter default threshold
 # Check both possible environment variable names with fallback
 threshold_str = os.getenv("VERIFICATION_THRESHOLD", 
-                         os.getenv("FACE_VERIFICATION_THRESHOLD", "0.6"))
+                         os.getenv("FACE_VERIFICATION_THRESHOLD", "0.4"))
 try:
     # Try to parse just the number from the string
     threshold_value = threshold_str.split('#')[0].strip() if '#' in threshold_str else threshold_str.strip()
     VERIFICATION_THRESHOLD = float(threshold_value)
 except (ValueError, AttributeError):
     # Default fallback if there's an error
-    VERIFICATION_THRESHOLD = 0.6
+    VERIFICATION_THRESHOLD = 0.4
     logger.warning(f"Could not parse threshold value '{threshold_str}', using default: {VERIFICATION_THRESHOLD}")
 
 FACE_DETECTION_MODEL = os.getenv("FACE_DETECTION_MODEL", "opencv")
