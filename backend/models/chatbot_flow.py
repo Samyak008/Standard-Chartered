@@ -2,8 +2,10 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from langchain import ConversationChain
 from langchain.prompts import PromptTemplate
 from typing import Dict, Any
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # In-memory storage for user sessions
 user_sessions: Dict[str, Dict[str, Any]] = {}
@@ -65,5 +67,3 @@ async def kyc_websocket(websocket: WebSocket, session_id: str):
     except WebSocketDisconnect:
         del user_sessions[session_id]
 
-# Include the router in your FastAPI app
-app.include_router(kyc_controller.router, prefix="/api/kyc", tags=["kyc"])

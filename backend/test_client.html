@@ -26,6 +26,35 @@
             color: red;
             font-weight: bold;
         }
+
+        .verification-warning {
+            color: orange;
+            font-weight: bold;
+        }
+        
+        .verification-alert {
+            color: red;
+            font-weight: bold;
+            background-color: #ffe6e6;
+            padding: 5px;
+            border-radius: 3px;
+            margin: 5px 0;
+            display: block;
+        }
+        
+        .alert-button {
+            background-color: #ff4c4c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+        
+        .alert-button:hover {
+            background-color: #ff3333;
+        }
     </style>
 </head>
 <body>
@@ -55,6 +84,15 @@
     <div style="display: flex;">
         <input type="text" id="chat-input" style="flex: 1; padding: 8px;" placeholder="Type your message here...">
         <button id="send-message" style="margin-left: 10px; padding: 8px 15px;">Send</button>
+    </div>
+
+    <!-- Add this section after the Loan Advisor Chat section -->
+    <h2>KYC Verification</h2>
+    <button id="start-kyc" style="margin-bottom: 10px;">Start KYC Process</button>
+    <div id="kyc-container" style="border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; margin-bottom: 10px;"></div>
+    <div style="display: flex;">
+        <input type="text" id="kyc-input" style="flex: 1; padding: 8px;" placeholder="Respond to KYC questions...">
+        <button id="send-kyc" style="margin-left: 10px; padding: 8px 15px;">Send</button>
     </div>
     
     <h2>Log</h2>
@@ -149,12 +187,58 @@
                 
                 verificationWs.onmessage = (event) => {
                     const result = JSON.parse(event.data);
+                    log(`Verification message: ${JSON.stringify(result)}`);
+                    
                     if (result.type === 'verification_result') {
                         const status = result.verified ? 'Verified' : 'Not Verified';
                         const confidence = (result.confidence * 100).toFixed(2);
+                        const statusClass = result.verified ? 'verification-success' : 'verification-failed';
+                        
+                        let html = `Status: <span class="${statusClass}">${status}</span><br>`;
+                        html += `Confidence: ${confidence}%<br>`;
+                        
+                        // Add error message if present
+                        if (result.error) {
+                            html += `<span class="verification-failed">Error: ${result.error}</span><br>`;
+                        }
+                        
+                        // Add warning for consecutive failures
+                        if (result.consecutive_failures) {
+                            html += `<span class="verification-warning">Warning: ${result.consecutive_failures} consecutive verification failures</span><br>`;
+                        }
+                        
+                        // Add re-authentication notice
+                        if (result.action_required === 're_authenticate') {
+                            html += `<span class="verification-alert">Security Alert: Please re-authenticate!</span><br>`;
+                            
+                            // Optional: Auto-trigger re-capture
+                            if (!document.getElementById('reauth-triggered')) {
+                                html += `<button id="reauth-now" class="alert-button">Re-authenticate Now</button>`;
+                                setTimeout(() => {
+                                    const reauthBtn = document.getElementById('reauth-now');
+                                    if (reauthBtn) {
+                                        reauthBtn.addEventListener('click', () => {
+                                            document.getElementById('captureReference').click();
+                                        });
+                                    }
+                                }, 100);
+                                
+                                // Add a flag to prevent multiple buttons
+                                const flagElem = document.createElement('span');
+                                flagElem.id = 'reauth-triggered';
+                                flagElem.style.display = 'none';
+                                document.body.appendChild(flagElem);
+                            }
+                        }
+                        
+                        html += `Time: ${new Date().toLocaleTimeString()}`;
+                        
+                        document.getElementById('faceVerification').innerHTML = html;
+                        log(`Face verification: ${status} (${confidence}%)${result.error ? ' - Error: ' + result.error : ''}`);
+                    } else if (result.type === 'error') {
                         document.getElementById('faceVerification').innerHTML = 
-                            `Status: <strong>${status}</strong><br>Confidence: ${confidence}%`;
-                        log(`Face verification: ${status} (${confidence}%)`);
+                            `<span class="verification-failed">Error: ${result.message}</span>`;
+                        log(`Verification error: ${result.message}`);
                     }
                 };
 
@@ -188,6 +272,10 @@
             
             if (chatWs) {
                 chatWs.close();
+            }
+
+            if (kycWs) {
+                kycWs.close();
             }
 
             document.getElementById('localVideo').srcObject = null;
@@ -271,12 +359,47 @@
                 const confidence = (result.confidence * 100).toFixed(2);
                 const statusClass = result.verified ? 'verification-success' : 'verification-failed';
                 
-                document.getElementById('faceVerification').innerHTML = 
-                    `Status: <span class="${statusClass}">${status}</span><br>` +
-                    `Confidence: ${confidence}%<br>` +
-                    `Time: ${new Date().toLocaleTimeString()}`;
+                let html = `Status: <span class="${statusClass}">${status}</span><br>`;
+                html += `Confidence: ${confidence}%<br>`;
                 
-                log(`Face verification: ${status} (${confidence}%)`);
+                // Add error message if present
+                if (result.error) {
+                    html += `<span class="verification-failed">Error: ${result.error}</span><br>`;
+                }
+                
+                // Add warning for consecutive failures
+                if (result.consecutive_failures) {
+                    html += `<span class="verification-warning">Warning: ${result.consecutive_failures} consecutive verification failures</span><br>`;
+                }
+                
+                // Add re-authentication notice
+                if (result.action_required === 're_authenticate') {
+                    html += `<span class="verification-alert">Security Alert: Please re-authenticate!</span><br>`;
+                    
+                    // Optional: Auto-trigger re-capture
+                    if (!document.getElementById('reauth-triggered')) {
+                        html += `<button id="reauth-now" class="alert-button">Re-authenticate Now</button>`;
+                        setTimeout(() => {
+                            const reauthBtn = document.getElementById('reauth-now');
+                            if (reauthBtn) {
+                                reauthBtn.addEventListener('click', () => {
+                                    document.getElementById('captureReference').click();
+                                });
+                            }
+                        }, 100);
+                        
+                        // Add a flag to prevent multiple buttons
+                        const flagElem = document.createElement('span');
+                        flagElem.id = 'reauth-triggered';
+                        flagElem.style.display = 'none';
+                        document.body.appendChild(flagElem);
+                    }
+                }
+                
+                html += `Time: ${new Date().toLocaleTimeString()}`;
+                
+                document.getElementById('faceVerification').innerHTML = html;
+                log(`Face verification: ${status} (${confidence}%)${result.error ? ' - Error: ' + result.error : ''}`);
             } else if (result.type === 'error') {
                 document.getElementById('faceVerification').innerHTML = 
                     `<span class="verification-failed">Error: ${result.message}</span>`;
@@ -350,6 +473,102 @@
             
             // Scroll to bottom
             chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // KYC WebSocket
+        let kycWs;
+        
+        // Start KYC process
+        document.getElementById('start-kyc').addEventListener('click', () => {
+            if (!sessionId) {
+                log('Error: Start a call first to get a session ID');
+                return;
+            }
+            
+            // Initialize KYC WebSocket connection
+            connectToKycChat(sessionId);
+        });
+        
+        // Connect to KYC WebSocket
+        function connectToKycChat(sessionId) {
+            // Sample KYC data
+            const kycData = {
+                aadhar_details: "Name: John Doe, DOB: 15/05/1985, Address: 123 Main St, Mumbai, ID: XXXX-XXXX-1234",
+                pan_details: "Name: JOHN DOE, PAN: ABCDE1234F, DOB: 15/05/1985",
+                income: "₹8,00,000 per annum"
+            };
+            
+            const kycWsUrl = `ws://localhost:8000/api/kyc/ws/kyc/${sessionId}`;
+            kycWs = new WebSocket(kycWsUrl);
+            
+            kycWs.onopen = () => {
+                log('KYC verification connection established');
+                displayKycMessage('System', 'Connected to KYC verification service');
+                
+                // Send initial KYC data
+                kycWs.send(JSON.stringify(kycData));
+                log('Sent KYC document data');
+            };
+            
+            kycWs.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                log(`KYC message received: ${JSON.stringify(message)}`);
+                
+                if (message.follow_up_question) {
+                    displayKycMessage('KYC Agent', message.follow_up_question);
+                }
+            };
+            
+            kycWs.onerror = (error) => {
+                log('KYC WebSocket error');
+                console.error(error);
+            };
+            
+            kycWs.onclose = () => {
+                log('KYC verification connection closed');
+            };
+            
+            // Set up send button for KYC responses
+            document.getElementById('send-kyc').addEventListener('click', sendKycResponse);
+            document.getElementById('kyc-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendKycResponse();
+            });
+        }
+        
+        // Send KYC response
+        function sendKycResponse() {
+            const inputElement = document.getElementById('kyc-input');
+            const response = inputElement.value.trim();
+            
+            if (response && kycWs && kycWs.readyState === WebSocket.OPEN) {
+                kycWs.send(JSON.stringify({
+                    user_input: response
+                }));
+                
+                displayKycMessage('You', response);
+                inputElement.value = '';
+            }
+        }
+        
+        // Display KYC messages
+        function displayKycMessage(sender, text) {
+            const kycContainer = document.getElementById('kyc-container');
+            const messageElement = document.createElement('div');
+            messageElement.style.marginBottom = '10px';
+            
+            const senderSpan = document.createElement('strong');
+            senderSpan.textContent = sender + ': ';
+            senderSpan.style.color = sender === 'You' ? '#007bff' : '#9c27b0'; // Blue for user, purple for KYC agent
+            
+            const textSpan = document.createElement('span');
+            textSpan.textContent = text;
+            
+            messageElement.appendChild(senderSpan);
+            messageElement.appendChild(textSpan);
+            kycContainer.appendChild(messageElement);
+            
+            // Scroll to bottom
+            kycContainer.scrollTop = kycContainer.scrollHeight;
         }
     </script>
 </body>

@@ -98,7 +98,7 @@ class VideoReceiver:
     
     def _extract_face(self, image: np.ndarray) -> Optional[np.ndarray]:
         """
-        Extract face from image using OpenCV's Haar cascade.
+        Extract face from image using multiple detection methods.
         
         Args:
             image: Image containing face
@@ -107,18 +107,16 @@ class VideoReceiver:
             Face image or None if no face detected
         """
         try:
-            # Load Haar cascade for face detection
+            # Try multiple detection methods for better accuracy
+            # 1. Try Haar cascade first (faster)
             face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-            
-            # Convert to grayscale
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            
-            # Detect faces
             faces = face_cascade.detectMultiScale(gray, 1.3, 5)
             
             if len(faces) > 0:
-                # Take the first face
-                x, y, w, h = faces[0]
+                # Take the largest face by area
+                largest_face = max(faces, key=lambda rect: rect[2] * rect[3])
+                x, y, w, h = largest_face
                 
                 # Add padding around the face (20%)
                 padding = int(w * 0.2)
@@ -129,10 +127,25 @@ class VideoReceiver:
                 
                 # Extract face with padding
                 face = image[y_start:y_end, x_start:x_end]
+                logger.info(f"Face detected with dimensions: {face.shape}")
                 return face
             
-            return None
-        
+            # 2. If Haar cascade fails, try to use the MTCNN from DeepFace 
+            # (This is a fallback and will be slower)
+            try:
+                from deepface import FaceDetector
+                faces = FaceDetector.detect_faces(image, detector_backend="opencv")
+                if len(faces) > 0:
+                    face = faces[0]
+                    logger.info(f"Face detected with DeepFace detector")
+                    return face
+                else:
+                    logger.warning(f"No face detected with any method")
+                    return None
+            except Exception as detector_error:
+                logger.error(f"DeepFace detector error: {str(detector_error)}")
+                return None
+                
         except Exception as e:
             logger.error(f"Error extracting face: {str(e)}")
             return None

@@ -2,6 +2,8 @@ import logging
 import sys
 import os
 from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 # Add the parent directory to sys.path to allow absolute imports
 sys.path.append(str(Path(__file__).parent.parent))
@@ -15,6 +17,7 @@ load_dotenv()
 
 # Import controllers - use absolute imports instead of relative
 from backend.controllers import user_controller, webrtc_controller
+from backend.models import chatbot_flow
 
 # Configure logging
 logging.basicConfig(
@@ -36,6 +39,12 @@ app.add_middleware(
 # Include routers
 app.include_router(user_controller.router, prefix="/api/users", tags=["users"])
 app.include_router(webrtc_controller.router, prefix="/api/webrtc", tags=["webrtc"])
+app.include_router(chatbot_flow.router, prefix="/api/kyc", tags=["kyc"])
+
+@app.get("/test-client")
+async def get_test_client():
+    """Serve the test client HTML page"""
+    return FileResponse("backend/test_client.html")
 
 @app.get("/")
 async def root():

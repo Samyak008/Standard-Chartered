@@ -7,9 +7,14 @@ from typing import Dict, Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Body
 from aiortc import RTCSessionDescription
 
-# Use absolute imports
+# Update imports to include the missing functions
 from backend.services.webrtc_service import process_offer, cleanup_peer_connection
-from backend.services.face_verification_service import verify_face, get_last_verification_result
+from backend.services.face_verification_service import (
+    verify_face, 
+    get_last_verification_result, 
+    get_consecutive_failures,   # Add this import
+    should_trigger_reauth       # Add this import
+)
 from backend.services.audio_service import AudioTranscriber
 from backend.services.ai_chatbot_service import LoanAdvisorBot
 
@@ -111,12 +116,27 @@ async def face_verification_websocket(websocket: WebSocket, session_id: str):
             verification_result = await get_last_verification_result(session_id)
             
             if verification_result:
-                await websocket.send_json({
+                response_data = {
                     "type": "verification_result",
                     "verified": verification_result["verified"],
                     "confidence": verification_result["confidence"],
                     "timestamp": verification_result["timestamp"]
-                })
+                }
+                
+                # Add error message if present
+                if "error" in verification_result:
+                    response_data["error"] = verification_result["error"]
+                
+                # Add warning for consecutive failures
+                consecutive_failures = await get_consecutive_failures(session_id)
+                if consecutive_failures > 0:
+                    response_data["consecutive_failures"] = consecutive_failures
+                
+                # Check if re-authentication should be triggered
+                if await should_trigger_reauth(session_id):
+                    response_data["action_required"] = "re_authenticate"
+                
+                await websocket.send_json(response_data)
             
             # Wait before sending next update
             await asyncio.sleep(5)
@@ -125,6 +145,13 @@ async def face_verification_websocket(websocket: WebSocket, session_id: str):
         logger.info(f"Face verification WebSocket disconnected for session {session_id}")
     except Exception as e:
         logger.error(f"Face verification WebSocket error: {str(e)}")
+        try:
+            await websocket.send_json({
+                "type": "error",
+                "message": str(e)
+            })
+        except:
+            pass
 
 @router.post("/set-reference-image/{session_id}")
 async def set_reference_image(session_id: str, data: Dict[str, str] = Body(...)):
@@ -152,3 +179,43 @@ async def set_reference_image(session_id: str, data: Dict[str, str] = Body(...))
     except Exception as e:
         logger.error(f"Error setting reference image: {str(e)}")
         return {"success": False, "error": str(e)}
+
+@router.websocket("/ws/chat/{session_id}")
+async def chat_websocket(websocket: WebSocket, session_id: str):
+    """
+    WebSocket endpoint for loan advisor chat.
+    
+    Args:
+        websocket: WebSocket connection
+        session_id: Session identifier
+    """
+    await websocket.accept()
+    
+    # Initialize chatbot for this session
+    chatbot = LoanAdvisorBot(session_id)
+    
+    try:
+        await websocket.send_json({
+            "type": "message",
+            "text": "Welcome to Standard Chartered's Virtual Loan Advisor. How can I help you today?"
+        })
+        
+        while True:
+            data = await websocket.receive_json()
+            if data.get("type") == "message":
+                user_message = data.get("text", "").strip()
+                
+                if user_message:
+                    # Process user message and get response
+                    response = await chatbot.process_message(user_message)
+                    
+                    # Send response back to client
+                    await websocket.send_json({
+                        "type": "message",
+                        "text": response
+                    })
+    
+    except WebSocketDisconnect:
+        logger.info(f"Chat WebSocket disconnected for session {session_id}")
+    except Exception as e:
+        logger.error(f"Chat WebSocket error: {str(e)}")
