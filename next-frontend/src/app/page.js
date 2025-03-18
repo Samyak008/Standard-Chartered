@@ -27,13 +27,13 @@ export default function HomePage() {
       <p className="mt-2 text-gray-600">Your personalized loan companion</p>
       <div className="mt-6 space-x-4">
         <Link
-          href="/login"
+          href="/auth/login"
           className="bg-blue-500 text-white px-4 py-2 rounded"
         >
           Login
         </Link>
         <Link
-          href="/register"
+          href="/auth/register"
           className="bg-green-500 text-white px-4 py-2 rounded"
         >
           Register

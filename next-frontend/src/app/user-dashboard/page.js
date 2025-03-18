@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import LogoutButton from "@/components/LogoutButton";
-
+import ImageUploader from "@/components/ImageUploader";
 export default function UserDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -12,7 +12,7 @@ export default function UserDashboard() {
   // Redirect if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/login");
+      router.push("/auth/login");
     }
   }, [status, router]);
 
@@ -31,9 +31,11 @@ export default function UserDashboard() {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
+    <div className=" mx-auto bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4">User Dashboard</h2>
       <p>Welcome, {session.user?.name || "User"}!</p>
+
+      <ImageUploader />
       <LogoutButton />
     </div>
   );
