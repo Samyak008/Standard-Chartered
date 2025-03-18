@@ -51,12 +51,11 @@ async def get_test_client():
 @app.get("/video-kyc-client")
 async def video_kyc_client():
     """Serve the Video KYC client page"""
-    return FileResponse("backend/video_kyc_client.html")
-
+    file_path = os.path.join(os.path.dirname(__file__), "video_kyc_client.html")
+    return FileResponse(file_path)
 @app.get("/")
 async def root():
     return {"message": "Virtual Branch Manager API is running"}
-
 if __name__ == "__main__":
     import uvicorn
     
