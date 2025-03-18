@@ -4,7 +4,7 @@ import logging
 import uuid
 from typing import Dict, Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Body
 from aiortc import RTCSessionDescription
 
 # Use absolute imports
@@ -125,3 +125,30 @@ async def face_verification_websocket(websocket: WebSocket, session_id: str):
         logger.info(f"Face verification WebSocket disconnected for session {session_id}")
     except Exception as e:
         logger.error(f"Face verification WebSocket error: {str(e)}")
+
+@router.post("/set-reference-image/{session_id}")
+async def set_reference_image(session_id: str, data: Dict[str, str] = Body(...)):
+    """Set a reference image for face verification"""
+    try:
+        # Get base64 encoded image
+        image_base64 = data.get("image")
+        if not image_base64:
+            return {"success": False, "error": "No image provided"}
+            
+        # Convert base64 to numpy array
+        import base64
+        import numpy as np
+        import cv2
+        
+        img_data = base64.b64decode(image_base64)
+        nparr = np.frombuffer(img_data, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        # Store as reference image
+        from backend.services.webrtc_service import reference_images
+        reference_images[session_id] = img
+        
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error setting reference image: {str(e)}")
+        return {"success": False, "error": str(e)}

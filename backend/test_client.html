@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebRTC Test Client</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        video { width: 100%; background: #eee; border-radius: 8px; }
+        button { padding: 10px 15px; margin: 10px 0; cursor: pointer; }
+        #log { height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-top: 20px; }
+        .status { margin: 10px 0; padding: 5px; border-radius: 4px; }
+        .connected { background-color: #d4edda; }
+        .disconnected { background-color: #f8d7da; }
+        #referenceImage {
+            max-width: 200px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            display: none;
+        }
+        
+        .verification-success {
+            color: green;
+            font-weight: bold;
+        }
+        
+        .verification-failed {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebRTC Video Call Test</h1>
+    <div id="status" class="status disconnected">Status: Disconnected</div>
+    
+    <button id="startCall">Start Video Call</button>
+    <button id="endCall" disabled>End Call</button>
+    
+    <h2>Local Video</h2>
+    <video id="localVideo" autoplay muted playsinline></video>
+    
+    <h2>Remote Video</h2>
+    <video id="remoteVideo" autoplay playsinline></video>
+    
+    <h2>Face Verification</h2>
+    <button id="captureReference">Capture Reference Image</button>
+    <div>
+        <img id="referenceImage" alt="Reference image">
+    </div>
+    
+    <div id="faceVerification">Not started</div>
+    
+    <!-- Add this after the Face Verification section -->
+    <h2>Loan Advisor Chat</h2>
+    <div id="chat-container" style="border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; margin-bottom: 10px;"></div>
+    <div style="display: flex;">
+        <input type="text" id="chat-input" style="flex: 1; padding: 8px;" placeholder="Type your message here...">
+        <button id="send-message" style="margin-left: 10px; padding: 8px 15px;">Send</button>
+    </div>
+    
+    <h2>Log</h2>
+    <div id="log"></div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        let pc; // RTCPeerConnection
+        let localStream;
+        let sessionId;
+        let signallingWs;
+        let verificationWs;
+        let chatWs;
+
+        // Add log message with timestamp
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const now = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div>[${now}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Start call
+        document.getElementById('startCall').addEventListener('click', async () => {
+            try {
+                // Request camera/microphone access
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('localVideo').srcObject = localStream;
+                
+                // Get session ID from backend
+                const response = await fetch(`${API_BASE}/webrtc/start-video-call`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                sessionId = data.session_id;
+                log(`Session created: ${sessionId}`);
+                
+                // Create WebRTC connection
+                pc = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+                
+                // Add local stream tracks to connection
+                localStream.getTracks().forEach(track => {
+                    pc.addTrack(track, localStream);
+                });
+                
+                // Handle incoming tracks (remote video)
+                pc.ontrack = event => {
+                    document.getElementById('remoteVideo').srcObject = event.streams[0];
+                };
+                
+                // Create and set local description
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                
+                // Connect WebSocket for signaling
+                const wsUrl = `ws://localhost:8000/api/webrtc/ws/rtc/${sessionId}`;
+                signallingWs = new WebSocket(wsUrl);
+                
+                signallingWs.onopen = () => {
+                    document.getElementById('status').className = 'status connected';
+                    document.getElementById('status').textContent = 'Status: Connected';
+                    document.getElementById('startCall').disabled = true;
+                    document.getElementById('endCall').disabled = false;
+                    
+                    // Send offer to server
+                    signallingWs.send(JSON.stringify({
+                        type: offer.type,
+                        sdp: offer.sdp
+                    }));
+                    log('Sent WebRTC offer to server');
+                };
+                
+                signallingWs.onmessage = async (event) => {
+                    const message = JSON.parse(event.data);
+                    log(`Received message: ${message.type}`);
+                    
+                    if (message.type === 'answer') {
+                        const remoteDesc = new RTCSessionDescription({
+                            type: message.type,
+                            sdp: message.sdp
+                        });
+                        await pc.setRemoteDescription(remoteDesc);
+                        log('Set remote description');
+                    }
+                };
+                
+                // Connect WebSocket for face verification
+                const verifyWsUrl = `ws://localhost:8000/api/webrtc/ws/verify-face-live/${sessionId}`;
+                verificationWs = new WebSocket(verifyWsUrl);
+                
+                verificationWs.onmessage = (event) => {
+                    const result = JSON.parse(event.data);
+                    if (result.type === 'verification_result') {
+                        const status = result.verified ? 'Verified' : 'Not Verified';
+                        const confidence = (result.confidence * 100).toFixed(2);
+                        document.getElementById('faceVerification').innerHTML = 
+                            `Status: <strong>${status}</strong><br>Confidence: ${confidence}%`;
+                        log(`Face verification: ${status} (${confidence}%)`);
+                    }
+                };
+
+                // Initialize chat when a call starts
+                initializeChat(sessionId);
+                
+            } catch (error) {
+                log(`Error: ${error.message}`);
+                console.error(error);
+            }
+        });
+        
+        // End call
+        document.getElementById('endCall').addEventListener('click', () => {
+            if (signallingWs) {
+                signallingWs.send(JSON.stringify({ type: 'disconnect' }));
+                signallingWs.close();
+            }
+            
+            if (verificationWs) {
+                verificationWs.close();
+            }
+            
+            if (pc) {
+                pc.close();
+            }
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            
+            if (chatWs) {
+                chatWs.close();
+            }
+
+            document.getElementById('localVideo').srcObject = null;
+            document.getElementById('remoteVideo').srcObject = null;
+            document.getElementById('status').className = 'status disconnected';
+            document.getElementById('status').textContent = 'Status: Disconnected';
+            document.getElementById('startCall').disabled = false;
+            document.getElementById('endCall').disabled = true;
+            document.getElementById('faceVerification').textContent = 'Not started';
+            
+            log('Call ended');
+        });
+        
+        // Capture reference image explicitly
+        document.getElementById('captureReference').addEventListener('click', async () => {
+            if (!sessionId) {
+                log('Error: Start a call first');
+                return;
+            }
+            
+            try {
+                // Take a snapshot from the local video
+                const video = document.getElementById('localVideo');
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+                
+                // Convert to base64
+                const imageBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
+                
+                // Send to server
+                const response = await fetch(`${API_BASE}/webrtc/set-reference-image/${sessionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        image: imageBase64
+                    })
+                });
+                
+                if (response.ok) {
+                    // Display the reference image
+                    document.getElementById('referenceImage').src = canvas.toDataURL('image/jpeg');
+                    document.getElementById('referenceImage').style.display = 'block';
+                    log('Reference image captured');
+                    
+                    // Start verification after reference image is set
+                    startFaceVerification();
+                } else {
+                    const error = await response.json();
+                    log(`Error setting reference image: ${error.detail}`);
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`);
+                console.error(error);
+            }
+        });
+        
+        // Start face verification process
+        function startFaceVerification() {
+            if (verificationWs && verificationWs.readyState === WebSocket.OPEN) {
+                verificationWs.send(JSON.stringify({
+                    type: 'start_verification'
+                }));
+                log('Started face verification');
+            } else {
+                log('WebSocket not connected. Cannot start verification.');
+            }
+        }
+        
+        // Enhance WebSocket message handling
+        verificationWs.onmessage = (event) => {
+            const result = JSON.parse(event.data);
+            log(`Verification message: ${JSON.stringify(result)}`);
+            
+            if (result.type === 'verification_result') {
+                const status = result.verified ? 'Verified' : 'Not Verified';
+                const confidence = (result.confidence * 100).toFixed(2);
+                const statusClass = result.verified ? 'verification-success' : 'verification-failed';
+                
+                document.getElementById('faceVerification').innerHTML = 
+                    `Status: <span class="${statusClass}">${status}</span><br>` +
+                    `Confidence: ${confidence}%<br>` +
+                    `Time: ${new Date().toLocaleTimeString()}`;
+                
+                log(`Face verification: ${status} (${confidence}%)`);
+            } else if (result.type === 'error') {
+                document.getElementById('faceVerification').innerHTML = 
+                    `<span class="verification-failed">Error: ${result.message}</span>`;
+                log(`Verification error: ${result.message}`);
+            }
+        };
+
+        // Function to initialize chat
+        function initializeChat(sessionId) {
+            const chatWsUrl = `ws://localhost:8000/api/webrtc/ws/chat/${sessionId}`;
+            chatWs = new WebSocket(chatWsUrl);
+            
+            chatWs.onopen = () => {
+                log('Chat connection established');
+                displayChatMessage('System', 'Connected to loan advisor. How can I help you today?');
+            };
+            
+            chatWs.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                log(`Chat message received: ${JSON.stringify(message)}`);
+                displayChatMessage('Advisor', message.text);
+            };
+            
+            chatWs.onerror = (error) => {
+                log('Chat WebSocket error');
+                console.error(error);
+            };
+            
+            chatWs.onclose = () => {
+                log('Chat connection closed');
+            };
+            
+            document.getElementById('send-message').addEventListener('click', sendChatMessage);
+            document.getElementById('chat-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendChatMessage();
+            });
+        }
+
+        // Function to send chat messages
+        function sendChatMessage() {
+            const inputElement = document.getElementById('chat-input');
+            const message = inputElement.value.trim();
+            
+            if (message && chatWs && chatWs.readyState === WebSocket.OPEN) {
+                chatWs.send(JSON.stringify({
+                    type: 'message',
+                    text: message
+                }));
+                
+                displayChatMessage('You', message);
+                inputElement.value = '';
+            }
+        }
+
+        // Function to display chat messages
+        function displayChatMessage(sender, text) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageElement = document.createElement('div');
+            messageElement.style.marginBottom = '10px';
+            
+            const senderSpan = document.createElement('strong');
+            senderSpan.textContent = sender + ': ';
+            senderSpan.style.color = sender === 'You' ? '#007bff' : '#28a745';
+            
+            const textSpan = document.createElement('span');
+            textSpan.textContent = text;
+            
+            messageElement.appendChild(senderSpan);
+            messageElement.appendChild(textSpan);
+            chatContainer.appendChild(messageElement);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>
