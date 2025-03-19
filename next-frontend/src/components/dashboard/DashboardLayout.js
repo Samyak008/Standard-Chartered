@@ -69,7 +69,7 @@ export default function DashboardLayout({ children }) {
                 />
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-white">Standard Chartered</h1>
+            <h1 className="text-xl font-bold text-white">LoanGenie</h1>
           </div>
         </div>
 
