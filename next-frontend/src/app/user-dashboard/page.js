@@ -2,13 +2,56 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 export default function UserDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [kycStatus, setKycStatus] = useState({
+    kycStatus: "Loading...",
+    faceVerified: false,
+    isComplete: false,
+    isLoading: true,
+  });
+
+  // Fetch KYC status from the API
+  useEffect(() => {
+    const fetchKycStatus = async () => {
+      if (status !== "authenticated") return;
+
+      try {
+        console.log("Fetching KYC status...");
+        const response = await fetch("/api/kyc/status");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch KYC status");
+        }
+
+        const result = await response.json();
+        console.log("KYC status response:", result);
+
+        // Make sure we have all the expected fields
+        if (result.success && result.data) {
+          setKycStatus({
+            ...result.data,
+            isLoading: false,
+          });
+        } else {
+          throw new Error("Invalid response format from KYC status API");
+        }
+      } catch (error) {
+        console.error("Error fetching KYC status:", error);
+        setKycStatus((prev) => ({
+          ...prev,
+          isLoading: false,
+        }));
+      }
+    };
+
+    fetchKycStatus();
+  }, [status]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -34,6 +77,49 @@ export default function UserDashboard() {
     return null;
   }
 
+  // Helper function to get KYC status badge
+  const getKycStatusBadge = () => {
+    console.log("Current KYC status:", kycStatus);
+
+    if (kycStatus.isLoading) {
+      return (
+        <div className="inline-block text-sm bg-gray-700/40 text-gray-300 px-3 py-1 rounded-full">
+          Loading...
+        </div>
+      );
+    }
+
+    if (kycStatus.isComplete) {
+      return (
+        <div className="inline-block text-sm bg-green-600/20 text-green-400 px-3 py-1 rounded-full">
+          Verified
+        </div>
+      );
+    }
+
+    if (kycStatus.kycStatus === "Verified") {
+      return (
+        <div className="inline-block text-sm bg-green-600/20 text-green-400 px-3 py-1 rounded-full">
+          Verified
+        </div>
+      );
+    }
+
+    if (kycStatus.kycStatus === "In Progress") {
+      return (
+        <div className="inline-block text-sm bg-yellow-600/20 text-yellow-400 px-3 py-1 rounded-full">
+          In Progress
+        </div>
+      );
+    }
+
+    return (
+      <div className="inline-block text-sm bg-gray-700/40 text-gray-300 px-3 py-1 rounded-full">
+        Not Started
+      </div>
+    );
+  };
+
   return (
     <DashboardLayout>
       <h2 className="text-2xl font-bold mb-6 text-white">Dashboard Overview</h2>
@@ -48,11 +134,11 @@ export default function UserDashboard() {
                 KYC Status
               </h3>
               <p className="text-sm text-gray-300 mb-4">
-                Complete your verification process
+                {kycStatus.isComplete
+                  ? "Your identity is verified"
+                  : "Complete your verification process"}
               </p>
-              <div className="inline-block text-sm bg-yellow-600/20 text-yellow-400 px-3 py-1 rounded-full">
-                Pending
-              </div>
+              {getKycStatusBadge()}
             </div>
             <div className="bg-blue-600/20 p-3 rounded-lg">
               <svg
@@ -71,23 +157,47 @@ export default function UserDashboard() {
               </svg>
             </div>
           </div>
-          <Link href="/user-dashboard/kyc">
-            <div className="mt-4 text-blue-400 hover:text-blue-300 transition-colors flex items-center text-sm">
-              Complete verification
+
+          {!kycStatus.isComplete && (
+            <Link href="/user-dashboard/kyc">
+              <div className="mt-4 text-blue-400 hover:text-blue-300 transition-colors flex items-center text-sm">
+                {kycStatus.kycStatus === "In Progress"
+                  ? "Continue verification"
+                  : "Start verification"}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 ml-1"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            </Link>
+          )}
+
+          {kycStatus.isComplete && (
+            <div className="mt-4 text-sm text-green-400 flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 ml-1"
+                className="h-4 w-4 mr-1"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
                 <path
                   fillRule="evenodd"
-                  d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                   clipRule="evenodd"
                 />
               </svg>
+              Completed on{" "}
+              {new Date(kycStatus.lastUpdated).toLocaleDateString()}
             </div>
-          </Link>
+          )}
         </div>
 
         {/* Loan Eligibility Card */}
@@ -146,12 +256,15 @@ export default function UserDashboard() {
       {/* Welcome message */}
       <div className="mb-8 bg-gray-800/30 p-6 rounded-xl border border-gray-700/50">
         <h3 className="text-xl font-semibold mb-2 text-white">
-          Welcome, {session.user?.name || "User"}!
+          Welcome, {kycStatus.name || session.user?.name || "User"}!
         </h3>
         <p className="text-gray-300">
           Your Standard Chartered banking dashboard provides quick access to all
-          your financial needs. Complete your KYC verification to unlock full
-          banking features.
+          your financial needs.
+          {!kycStatus.isComplete &&
+            " Complete your KYC verification to unlock full banking features."}
+          {kycStatus.isComplete &&
+            " Your identity has been verified. You now have full access to all banking services."}
         </p>
       </div>
     </DashboardLayout>

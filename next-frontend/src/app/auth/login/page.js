@@ -48,7 +48,7 @@ export default function LoginPage() {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-white ml-3">Loanly</h1>
+              <h1 className="text-2xl font-bold text-white ml-3">LoanGenie</h1>
             </div>
 
             <div className="mt-16">
@@ -58,9 +58,8 @@ export default function LoginPage() {
                 </span>
               </h2>
               <p className="text-gray-300 mb-8">
-                Access your account securely to manage your finances, make
-                transactions, and explore our range of banking services tailored
-                to your needs.
+                Access your account securely to manage your finances and explore
+                our range of banking services tailored to your needs.
               </p>
               <div className="space-y-4">
                 <div className="flex items-start">
@@ -99,25 +98,6 @@ export default function LoginPage() {
                   </div>
                   <p className="text-gray-300">
                     Easy account management and transfers
-                  </p>
-                </div>
-                <div className="flex items-start">
-                  <div className="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 text-indigo-400"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-gray-300">
-                    24/7 customer support and assistance
                   </p>
                 </div>
               </div>

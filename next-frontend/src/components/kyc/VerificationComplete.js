@@ -1,9 +1,37 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 export default function VerificationComplete({ formData }) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const [kycData, setKycData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch updated KYC data
+  useEffect(() => {
+    const fetchKycData = async () => {
+      if (!session) return;
+
+      try {
+        const response = await fetch("/api/kyc/status");
+        if (!response.ok) {
+          throw new Error("Failed to fetch KYC data");
+        }
+
+        const data = await response.json();
+        setKycData(data.data);
+      } catch (error) {
+        console.error("Error fetching KYC data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchKycData();
+  }, [session]);
 
   return (
     <div className="flex flex-col items-center text-center py-6">
@@ -28,8 +56,7 @@ export default function VerificationComplete({ formData }) {
         Verification Successful!
       </h3>
       <p className="text-gray-300 mb-8">
-        Your identity has been successfully verified. You now have full access
-        to all Standard Chartered banking services.
+        Your identity has been successfully verified.
       </p>
 
       <div className="w-full max-w-md p-6 bg-gray-800/70 border border-gray-700 rounded-xl mb-8">
@@ -40,13 +67,13 @@ export default function VerificationComplete({ formData }) {
           <div className="flex justify-between pb-2 border-b border-gray-700">
             <span className="text-gray-400">Name</span>
             <span className="text-white font-medium">
-              {formData.personal?.fullName || "N/A"}
+              {kycData?.name || formData?.personal?.name || "N/A"}
             </span>
           </div>
           <div className="flex justify-between pb-2 border-b border-gray-700">
             <span className="text-gray-400">Email</span>
             <span className="text-white font-medium">
-              {formData.personal?.email || "N/A"}
+              {session?.user?.email || formData?.personal?.email || "N/A"}
             </span>
           </div>
           <div className="flex justify-between pb-2 border-b border-gray-700">
@@ -60,7 +87,9 @@ export default function VerificationComplete({ formData }) {
           <div className="flex justify-between">
             <span className="text-gray-400">Verification Date</span>
             <span className="text-white font-medium">
-              {new Date().toLocaleDateString()}
+              {kycData?.lastUpdated
+                ? new Date(kycData.lastUpdated).toLocaleDateString()
+                : new Date().toLocaleDateString()}
             </span>
           </div>
         </div>

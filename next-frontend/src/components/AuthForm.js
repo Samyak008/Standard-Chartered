@@ -394,7 +394,6 @@ export default function AuthForm({ type }) {
         </div>
 
         <div className="text-center text-sm text-gray-400 mt-8">
-          <p>© {new Date().getFullYear()} Standard Chartered Bank</p>
           <div className="flex justify-center gap-6 mt-2">
             <a
               href="#"
