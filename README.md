@@ -4,53 +4,80 @@ This project is an AI-powered Virtual Branch Manager designed to assist users wi
 
 ## Demo Video
 
-<!-- You can watch the demo video [![Watch the video](https://img.youtube.com/vi/6b35r9mIXZ4/0.jpg)](https://www.youtube.com/watch?v=6b35r9mIXZ4) -->
-You can watch the demo video [![Watch the video](https://img.youtube.com/vi/6b35r9mIXZ4/0.jpg)](https://private-user-images.githubusercontent.com/114304107/424308568-1c6b7716-7b97-466b-8fc4-cde3136a24ba.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDIzNjM5NTMsIm5iZiI6MTc0MjM2MzY1MywicGF0aCI6Ii8xMTQzMDQxMDcvNDI0MzA4NTY4LTFjNmI3NzE2LTdiOTctNDY2Yi04ZmM0LWNkZTMxMzZhMjRiYS5tcDQ_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUwMzE5JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MDMxOVQwNTU0MTNaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT02MzJhOGFhMzFmZGViODNhZDZhYTQ5YzgzZWM0OWYyZGVmNWU4OWUxMTkxYmQwMGY2MWZkZjMzNmYwMDAyOTc3JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.RxzbR2Oiqu3itfwYJP6k5Ba_G5JNo6YiHA6BUmCA9MY)
+You can watch the demo video 
+
+[![Watch the video](https://img.youtube.com/vi/6b35r9mIXZ4/0.jpg)](https://github.com/user-attachments/assets/1c6b7716-7b97-466b-8fc4-cde3136a24ba)
+
+
+(https://www.youtube.com/watch?v=6b35r9mIXZ4)
 
 ## Project Structure
 
-
 ```
-virtual-branch-manager
-├── backend
-│   ├── app.py
-│   ├── config
-│   │   ├── __init__.py
-│   │   └── settings.py
-│   ├── controllers
-│   │   ├── __init__.py
-│   │   └── user_controller.py
-│   ├── models
-│   │   ├── __init__.py
-│   │   └── user.py
-│   ├── services
-│   │   ├── __init__.py
+standard-chartered/
+├── backend/
+│   ├── app.py                 # Main FastAPI application
+│   ├── controllers/
+│   │   ├── user_controller.py
+│   │   ├── loan_controller.py
+│   │   └── video_kyc_controller.py
+│   ├── models/
+│   │   ├── user.py
+│   │   ├── loan.py
+│   │   └── kyc.py
+│   ├── services/
 │   │   ├── ocr_service.py
-│   │   └── ai_service.py
-│   ├── utils
-│   │   ├── __init__.py
-│   │   └── helpers.py
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend
-│   ├── public
-│   │   └── index.html
-│   ├── src
-│   │   ├── components
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── Login.jsx
-│   │   │   └── OCRUpload.jsx
-│   │   ├── services
-│   │   │   └── api.js
-│   │   ├── App.js
-│   │   └── index.js
-│   ├── package.json
-│   └── Dockerfile
-├── database
+│   │   ├── ai_service.py
+│   │   └── webrtc_service.py
+│   ├── ml_models/
+│   │   ├── loan_predictor.py
+│   │   └── face_detector.py
+│   └── utils/
+│       └── helpers.py
+│
+├── next-frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── admin-dashboard/
+│   │   │   ├── user-dashboard/
+│   │   │   │   ├── kyc/
+│   │   │   │   └── loan/
+│   │   │   └── layout.js
+│   │   ├── components/
+│   │   │   ├── dashboard/
+│   │   │   ├── loan/
+│   │   │   └── kyc/
+│   │   └── services/
+│   │       └── api.js
+│   ├── public/
+│   └── package.json
+│
+├── loan_approval/
+│   ├── model_building.ipynb
+│   ├── app.py
+│   └── requirements.txt
+│
+├── database/
 │   └── schema.sql
+│
 ├── docker-compose.yml
 └── README.md
 ```
+
+### Key Directories
+
+- `/backend`: FastAPI server with ML model integration
+- `/next-frontend`: Next.js frontend application
+- `/loan_approval`: Loan prediction model and training
+- `/database`: Database schemas and migrations
+
+### Technology Stack
+
+- **Backend**: FastAPI, Python
+- **Frontend**: Next.js, React
+- **ML**: XGBoost, scikit-learn
+- **Database**: PostgreSQL
+- **DevOps**: Docker, Docker Compose
 
 ## Setup Instructions
 
