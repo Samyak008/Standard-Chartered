@@ -2,6 +2,14 @@
 
 This project is an AI-powered Virtual Branch Manager designed to assist users with personal credit management. It features a backend built with Python (using FastAPI or Flask) and a frontend developed in React. The application includes functionalities for user authentication, document uploads for OCR processing, and AI-driven eligibility checks.
 
+## Team Algonomics (Team ZOZO presents Loan Genie)
+- Aagam Chhajer   (RA2211047010110)
+- Abha Shukla     (RA2211003011829)
+- Srivathsan B    (RA2211003011199)
+- Tamanna Grover  (RA2211003010376)
+- Samyak Varia    (RA2211003011202)
+- Shivnarayan S   (RA2211003011216)
+
 ## Demo Video
 
 You can watch the demo video 
