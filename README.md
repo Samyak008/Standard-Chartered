@@ -4,7 +4,8 @@ This project is an AI-powered Virtual Branch Manager designed to assist users wi
 
 ## Demo Video
 
-You can watch the demo video [![Watch the video](https://img.youtube.com/vi/6b35r9mIXZ4/0.jpg)](https://www.youtube.com/watch?v=6b35r9mIXZ4)
+<!-- You can watch the demo video [![Watch the video](https://img.youtube.com/vi/6b35r9mIXZ4/0.jpg)](https://www.youtube.com/watch?v=6b35r9mIXZ4) -->
+You can watch the demo video [![Watch the video](https://img.youtube.com/vi/6b35r9mIXZ4/0.jpg)](https://github.com/Samyak008/Standard-Chartered/issues/1#issue-2930487470)
 
 ## Project Structure
 
