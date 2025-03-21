@@ -39,5 +39,7 @@ langchain-community
 langchain-openai
 langchain-qroq
 
-
+crewai
+crewai[tools]
+crewai-community
 starlette
