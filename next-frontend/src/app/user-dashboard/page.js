@@ -250,6 +250,56 @@ export default function UserDashboard() {
           </Link>
         </div>
 
+        {/* Voice Assistant Card */}
+        <div className="backdrop-blur-md bg-green-600/10 p-6 rounded-xl border border-green-500/20 hover:border-green-500/40 transition-all duration-300 shadow-lg">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                AI Credit Manager
+              </h3>
+              <p className="text-sm text-gray-300 mb-4">
+                Talk to our AI financial advisor
+              </p>
+              <div className="inline-block text-sm bg-green-600/20 text-green-400 px-3 py-1 rounded-full">
+                Available
+              </div>
+            </div>
+            <div className="bg-green-600/20 p-3 rounded-lg">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-7 w-7 text-green-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                />
+              </svg>
+            </div>
+          </div>
+          <Link href="/user-dashboard/voice-assistant">
+            <div className="mt-4 text-green-400 hover:text-green-300 transition-colors flex items-center text-sm">
+              Talk to assistant
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 ml-1"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          </Link>
+        </div>
+
         {/* Account Summary Card */}
       </div>
 
