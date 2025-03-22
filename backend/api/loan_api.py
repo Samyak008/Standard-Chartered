@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from models.loan_app_crew import process_loan_application
+from crew_api import process_loan_application
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()

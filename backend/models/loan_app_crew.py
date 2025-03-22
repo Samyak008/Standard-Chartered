@@ -211,39 +211,4 @@ if st.sidebar.button("Get Recommendations"):
         st.error(f"An error occurred: {str(e)}")
         st.info("Please try again or contact support if the issue persists.")
 
-async def process_loan_application(user_inputs: dict):
-    # Initialize agents and tools
-    loan_recommender = Agent(
-        role="Loan Recommendation Expert",
-        goal="Analyze borrower information and recommend suitable loan options",
-        backstory=loan_expert_backstory,
-        verbose=True,
-        allow_delegation=False,
-        tools=[search_tool, web_search_tool],
-        llm=model_agent
-    )
-    
-    # ... (rest of your agent initialization code)
 
-    # Create tasks
-    tasks = [
-        Task(
-            description=f"Analyze the loan request based on: {user_inputs}",
-            agent=loan_recommender
-        ),
-        # ... (other tasks)
-    ]
-
-    # Create and run crew
-    crew = Crew(
-        agents=[loan_recommender, loan_analyst, report_generator],
-        tasks=tasks,
-        verbose=True
-    )
-
-    result = await crew.kickoff()
-    
-    return {
-        "loan_options": result.tasks_output[0].raw,
-        "risk_analysis": result.tasks_output[1].raw
-    }
