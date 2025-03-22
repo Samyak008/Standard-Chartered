@@ -104,7 +104,7 @@ journey_structure = {
     "intro": {
         "title": "Welcome to Standard Chartered Bank",
         "description": "Please select an option to continue.",
-        "video_path": r'C:\Users\Samyak Varia\Downloads\sc\1ST VID.mp4',
+        "video_path": "video1.mp4",
         "options": [
             {
                 "id": "new_loan",
@@ -131,34 +131,35 @@ journey_structure = {
     "loan_type": {
         "title": "Select Your Loan Type",
         "description": "Choose the type of loan that fits your needs.",
-        "video_path": r'C:\Users\Samyak Varia\Downloads\sc\2ND VID.mp4',
+        "video_path":  "video2.mp4",
         "options": [
             {
                 "id": "home",
                 "title": "Home Loan",
                 "description": "Finance your dream home with competitive interest rates",
-                "video_path": r'C:\Users\Samyak Varia\Downloads\sc\3RD VID.mp4',
+                "video_path":  "video3.mp4",
+
                 "next_step": "loan_info"  # Changed from thank_you to loan_info
             },
             {
                 "id": "car",
                 "title": "Car Loan",
                 "description": "Drive your dream car with affordable financing",
-                "video_path": r'C:\Users\Samyak Varia\Downloads\sc\3RD VID.mp4',
+                "video_path": "video3.mp4",
                 "next_step": "loan_info"  # Changed from thank_you to loan_info
             },
             {
                 "id": "education",
                 "title": "Education Loan",
                 "description": "Invest in your future with education financing",
-                "video_path": r'C:\Users\Samyak Varia\Downloads\sc\3RD VID.mp4',
+                "video_path": "video3.mp4",
                 "next_step": "loan_info"  # Changed from thank_you to loan_info
             },
             {
                 "id": "business",
                 "title": "Business Loan",
                 "description": "Grow your business with our financial solutions",
-                "video_path": r'C:\Users\Samyak Varia\Downloads\sc\3RD VID.mp4',
+                "video_path": "video3.mp4",
                 "next_step": "loan_info"  # Changed from thank_you to loan_info
             }
         ]
@@ -173,7 +174,7 @@ journey_structure = {
     "thank_you": {
         "title": "Thank You & Next Steps",
         "description": "Thank you for your interest. Let's proceed with document verification and KYC.",
-        "video_path": r'C:\Users\Samyak Varia\Downloads\sc\4TH VID.mp4',
+        "video_path": "video4.mp4",
         "next_step": "chatbot"  # After thank you, redirect to chatbot
     }
 }

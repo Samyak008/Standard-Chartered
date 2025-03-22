@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Verification System</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --dark: #333;
+            --light: #f5f5f5;
+            --gray: #ddd;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            flex: 1;
+        }
+        
+        .setup-section, .verification-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h2::before {
+            content: "";
+            display: block;
+            width: 8px;
+            height: 25px;
+            background-color: var(--primary);
+            border-radius: 4px;
+        }
+        
+        .upload-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed var(--gray);
+            border-radius: 10px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .upload-container:hover {
+            border-color: var(--primary);
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .upload-icon {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #666;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .upload-btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .image-preview-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .preview-card {
+            flex: 1;
+            max-width: 48%;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .preview-header {
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            font-weight: 600;
+        }
+        
+        .preview-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+            background-color: #f0f0f0;
+        }
+        
+        .preview-placeholder {
+            width: 100%;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+            color: #999;
+            font-style: italic;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .btn-outline:hover {
+            background-color: rgba(67, 97, 238, 0.1);
+        }
+        
+        .btn-large {
+            font-size: 1.1rem;
+            padding: 15px 30px;
+        }
+        
+        .verification-result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .result-success {
+            background-color: rgba(46, 204, 113, 0.2);
+            border: 1px solid var(--success);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .result-failure {
+            background-color: rgba(231, 76, 60, 0.2);
+            border: 1px solid var(--danger);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .result-icon {
+            font-size: 2rem;
+        }
+        
+        .result-success .result-icon {
+            color: var(--success);
+        }
+        
+        .result-failure .result-icon {
+            color: var(--danger);
+        }
+        
+        .result-text {
+            flex: 1;
+        }
+        
+        .result-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+        
+        .confidence {
+            font-weight: 600;
+        }
+        
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(67, 97, 238, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .tips {
+            margin-top: 30px;
+            background-color: rgba(67, 97, 238, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .tips-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        
+        .tips-list {
+            list-style-type: none;
+        }
+        
+        .tips-list li {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        .tips-list li::before {
+            content: "•";
+            color: var(--primary);
+            font-weight: bold;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid var(--gray);
+            color: #777;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .image-preview-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .preview-card {
+                max-width: 100%;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Face Verification System</h1>
+            <p class="subtitle">Secure identity verification using facial recognition</p>
+        </header>
+        
+        <div class="main-content">
+            <section class="setup-section">
+                <h2>Setup Reference Image</h2>
+                <div class="upload-container" id="referenceUploadContainer">
+                    <div class="upload-icon">📷</div>
+                    <p class="upload-text">Upload a clear photo of your face to use as a reference</p>
+                    <p class="upload-text">Click or drag & drop</p>
+                    <input type="file" id="referenceInput" class="file-input" accept="image/*">
+                    <button class="upload-btn">Choose File</button>
+                </div>
+                
+                <div class="image-preview-container">
+                    <div class="preview-card">
+                        <div class="preview-header">Reference Image</div>
+                        <div class="preview-placeholder" id="referencePlaceholder">
+                            No image uploaded
+                        </div>
+                        <img id="referencePreview" class="preview-image" style="display: none;">
+                    </div>
+                </div>
+            </section>
+            
+            <section class="verification-section">
+                <h2>Verify Your Identity</h2>
+                <div class="upload-container" id="verifyUploadContainer">
+                    <div class="upload-icon">🔍</div>
+                    <p class="upload-text">Upload a current photo to verify against the reference</p>
+                    <p class="upload-text">Click or drag & drop</p>
+                    <input type="file" id="verifyInput" class="file-input" accept="image/*">
+                    <button class="upload-btn">Choose File</button>
+                </div>
+                
+                <div class="image-preview-container">
+                    <div class="preview-card">
+                        <div class="preview-header">Verification Image</div>
+                        <div class="preview-placeholder" id="verifyPlaceholder">
+                            No image uploaded
+                        </div>
+                        <img id="verifyPreview" class="preview-image" style="display: none;">
+                    </div>
+                </div>
+                
+                <div class="loader" id="loader"></div>
+                
+                <div class="verification-result result-success" id="successResult">
+                    <div class="result-icon">✓</div>
+                    <div class="result-text">
+                        <div class="result-title">Identity Verified</div>
+                        <p>Face matches the reference image with <span class="confidence" id="successConfidence">95%</span> confidence.</p>
+                    </div>
+                </div>
+                
+                <div class="verification-result result-failure" id="failureResult">
+                    <div class="result-icon">✗</div>
+                    <div class="result-text">
+                        <div class="result-title">Verification Failed</div>
+                        <p>Face does not match the reference image. Confidence: <span class="confidence" id="failureConfidence">45%</span></p>
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <button class="btn btn-primary btn-large" id="verifyBtn" disabled>
+                        Verify Identity
+                    </button>
+                    <button class="btn btn-outline" id="resetBtn">
+                        Reset
+                    </button>
+                </div>
+                
+                <div class="tips">
+                    <div class="tips-title">Tips for better verification:</div>
+                    <ul class="tips-list">
+                        <li>Use a well-lit environment for both photos</li>
+                        <li>Look directly at the camera with a neutral expression</li>
+                        <li>Avoid wearing sunglasses, hats, or other face-covering items</li>
+                        <li>Ensure your entire face is visible and centered in the frame</li>
+                        <li>Use a recent photo for verification</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+        
+        <footer>
+            Face Verification System • Secure Identity Authentication
+        </footer>
+    </div>
+    
+    <script>
+        // DOM Elements
+        const referenceInput = document.getElementById('referenceInput');
+        const referenceUploadContainer = document.getElementById('referenceUploadContainer');
+        const referencePreview = document.getElementById('referencePreview');
+        const referencePlaceholder = document.getElementById('referencePlaceholder');
+        
+        const verifyInput = document.getElementById('verifyInput');
+        const verifyUploadContainer = document.getElementById('verifyUploadContainer');
+        const verifyPreview = document.getElementById('verifyPreview');
+        const verifyPlaceholder = document.getElementById('verifyPlaceholder');
+        
+        const verifyBtn = document.getElementById('verifyBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const loader = document.getElementById('loader');
+        
+        const successResult = document.getElementById('successResult');
+        const failureResult = document.getElementById('failureResult');
+        const successConfidence = document.getElementById('successConfidence');
+        const failureConfidence = document.getElementById('failureConfidence');
+        
+        // Variables to store image data
+        let referenceImageData = null;
+        let verifyImageData = null;
+        
+        // Bind events
+        referenceUploadContainer.addEventListener('click', () => referenceInput.click());
+        verifyUploadContainer.addEventListener('click', () => verifyInput.click());
+        
+        referenceInput.addEventListener('change', handleReferenceUpload);
+        verifyInput.addEventListener('change', handleVerifyUpload);
+        
+        // Drag and drop for reference image
+        referenceUploadContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            referenceUploadContainer.style.borderColor = '#4361ee';
+            referenceUploadContainer.style.backgroundColor = 'rgba(67, 97, 238, 0.1)';
+        });
+        
+        referenceUploadContainer.addEventListener('dragleave', () => {
+            referenceUploadContainer.style.borderColor = '#ddd';
+            referenceUploadContainer.style.backgroundColor = 'transparent';
+        });
+        
+        referenceUploadContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            referenceUploadContainer.style.borderColor = '#ddd';
+            referenceUploadContainer.style.backgroundColor = 'transparent';
+            
+            if (e.dataTransfer.files.length) {
+                referenceInput.files = e.dataTransfer.files;
+                handleReferenceUpload();
+            }
+        });
+        
+        // Drag and drop for verify image
+        verifyUploadContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            verifyUploadContainer.style.borderColor = '#4361ee';
+            verifyUploadContainer.style.backgroundColor = 'rgba(67, 97, 238, 0.1)';
+        });
+        
+        verifyUploadContainer.addEventListener('dragleave', () => {
+            verifyUploadContainer.style.borderColor = '#ddd';
+            verifyUploadContainer.style.backgroundColor = 'transparent';
+        });
+        
+        verifyUploadContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            verifyUploadContainer.style.borderColor = '#ddd';
+            verifyUploadContainer.style.backgroundColor = 'transparent';
+            
+            if (e.dataTransfer.files.length) {
+                verifyInput.files = e.dataTransfer.files;
+                handleVerifyUpload();
+            }
+        });
+        
+        verifyBtn.addEventListener('click', performVerification);
+        resetBtn.addEventListener('click', resetForm);
+        
+        // Handle file uploads
+        function handleReferenceUpload() {
+            const file = referenceInput.files[0];
+            if (file && file.type.match('image.*')) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    referenceImageData = e.target.result;
+                    referencePreview.src = referenceImageData;
+                    referencePreview.style.display = 'block';
+                    referencePlaceholder.style.display = 'none';
+                    
+                    // Enable verify button if both images are uploaded
+                    checkVerifyButtonState();
+                };
+                
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function handleVerifyUpload() {
+            const file = verifyInput.files[0];
+            if (file && file.type.match('image.*')) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    verifyImageData = e.target.result;
+                    verifyPreview.src = verifyImageData;
+                    verifyPreview.style.display = 'block';
+                    verifyPlaceholder.style.display = 'none';
+                    
+                    // Enable verify button if both images are uploaded
+                    checkVerifyButtonState();
+                };
+                
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function checkVerifyButtonState() {
+            if (referenceImageData && verifyImageData) {
+                verifyBtn.disabled = false;
+            } else {
+                verifyBtn.disabled = true;
+            }
+            
+            // Hide results when images change
+            successResult.style.display = 'none';
+            failureResult.style.display = 'none';
+        }
+        
+        function performVerification() {
+            // Hide previous results
+            successResult.style.display = 'none';
+            failureResult.style.display = 'none';
+            
+            // Show loader
+            loader.style.display = 'block';
+            verifyBtn.disabled = true;
+            
+            // Simulate API call to face verification backend
+            setTimeout(() => {
+                // Hide loader
+                loader.style.display = 'none';
+                
+                // This is where you would normally make an API call to your backend
+                // For demo purposes, we'll simulate a random result
+                const isMatch = Math.random() > 0.5;
+                const confidenceScore = isMatch ? 
+                    Math.floor(75 + Math.random() * 25) : 
+                    Math.floor(25 + Math.random() * 35);
+                
+                if (isMatch) {
+                    successConfidence.textContent = confidenceScore + '%';
+                    successResult.style.display = 'flex';
+                } else {
+                    failureConfidence.textContent = confidenceScore + '%';
+                    failureResult.style.display = 'flex';
+                }
+                
+                verifyBtn.disabled = false;
+            }, 2000);
+        }
+        
+        function resetForm() {
+            // Reset reference image
+            referenceImageData = null;
+            referencePreview.src = '';
+            referencePreview.style.display = 'none';
+            referencePlaceholder.style.display = 'flex';
+            referenceInput.value = '';
+            
+            // Reset verify image
+            verifyImageData = null;
+            verifyPreview.src = '';
+            verifyPreview.style.display = 'none';
+            verifyPlaceholder.style.display = 'flex';
+            verifyInput.value = '';
+            
+            // Hide results
+            successResult.style.display = 'none';
+            failureResult.style.display = 'none';
+            
+            // Disable verify button
+            verifyBtn.disabled = true;
+        }
+        
+        // In a real application, this would connect to your backend API
+        function callVerificationAPI(referenceImage, verifyImage) {
+            // This is a placeholder for the actual API call
+            // You would send both images to your backend and get a response
+            // For example:
+            /*
+            const formData = new FormData();
+            formData.append('reference', referenceImageBlob);
+            formData.append('verify', verifyImageBlob);
+            
+            return fetch('/api/verify-face', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                return {
+                    isMatch: data.isMatch,
+                    confidence: data.confidence
+                };
+            });
+            */
+        }
+    </script>
+</body>
+</html>
