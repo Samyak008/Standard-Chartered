@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video KYC Session</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        h1, h2 {
+            color: #0066b2; /* Standard Chartered Blue */
+        }
+        .video-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        video {
+            width: 100%;
+            border-radius: 8px;
+            background-color: #eee;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        button {
+            background-color: #0066b2;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin-right: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0052a3;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .verification-status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .conversation {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 18px;
+            max-width: 80%;
+        }
+        .agent {
+            background-color: #e6f3ff;
+            color: #0066b2;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .user {
+            background-color: #0066b2;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        .message-container {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .input-container {
+            display: flex;
+            margin-top: 10px;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .status-indicator {
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .status-connected {
+            background-color: #28a745;
+        }
+        .status-disconnected {
+            background-color: #dc3545;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            border-bottom: 2px solid #0066b2;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        #log {
+            height: 200px;
+            overflow-y: auto;
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            font-family: monospace;
+            border-radius: 4px;
+        }
+        .face-verification {
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .error-message {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Standard Chartered Video KYC</h1>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="main">Main</div>
+            <div class="tab" data-tab="settings">Settings</div>
+            <div class="tab" data-tab="debug">Debug</div>
+        </div>
+        
+        <div id="errorMessage" class="error-message"></div>
+        
+        <div class="tab-content active" id="main-tab">
+            <div class="video-container">
+                <div>
+                    <h2>Your Video</h2>
+                    <video id="localVideo" autoplay muted playsinline></video>
+                </div>
+                <div>
+                    <h2>Agent Video</h2>
+                    <video id="remoteVideo" autoplay playsinline></video>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div>
+                    <span class="status-indicator status-disconnected" id="connectionIndicator"></span>
+                    <span id="connectionStatus">Disconnected</span>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button id="startButton">Start KYC Session</button>
+                    <button id="endButton" disabled>End Session</button>
+                </div>
+            </div>
+            
+            <div class="face-verification">
+                <h2>Face Verification</h2>
+                <div id="verificationStatus">Not started</div>
+                <button id="captureReferenceBtn" disabled>Capture Reference Image</button>
+                <div style="margin-top: 10px;">
+                    <img id="referenceImg" style="max-width: 150px; display: none;" alt="Reference image">
+                </div>
+            </div>
+            
+            <h2>Conversation</h2>
+            <div class="conversation" id="conversationBox"></div>
+            
+            <div class="input-container">
+                <input type="text" id="messageInput" placeholder="Type your message..." disabled>
+                <button id="sendButton" disabled>Send</button>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="settings-tab">
+            <h2>Session Settings</h2>
+            <form id="kycSettingsForm">
+                <div style="margin-bottom: 15px;">
+                    <label for="loanType">Loan Type:</label>
+                    <select id="loanType" style="padding: 8px; width: 100%; margin-top: 5px;">
+                        <option value="personal">Personal Loan</option>
+                        <option value="home">Home Loan</option>
+                        <option value="auto">Auto Loan</option>
+                        <option value="business">Business Loan</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label for="applicantName">Full Name:</label>
+                    <input type="text" id="applicantName" style="padding: 8px; width: 100%; margin-top: 5px;" value="John Doe">
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label for="applicantId">ID Number:</label>
+                    <input type="text" id="applicantId" style="padding: 8px; width: 100%; margin-top: 5px;" value="ABCDE1234F">
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label for="applicantContact">Contact:</label>
+                    <input type="text" id="applicantContact" style="padding: 8px; width: 100%; margin-top: 5px;" value="+91 9876543210">
+                </div>
+            </form>
+        </div>
+        
+        <div class="tab-content" id="debug-tab">
+            <h2>Debug Log</h2>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let pc; // RTCPeerConnection
+        let localStream;
+        let sessionId;
+        let rtcWs; // WebRTC signaling
+        let kycWs; // KYC conversation
+        let verificationWs; // Face verification
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+            });
+        });
+
+        // Log function
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const now = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div>[${now}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 10000); // Hide after 10 seconds
+        }
+
+        // Add message to conversation
+        function addMessage(text, isUser = false) {
+            const conversation = document.getElementById('conversationBox');
+            const messageContainer = document.createElement('div');
+            messageContainer.className = 'message-container';
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'agent'}`;
+            messageDiv.textContent = text;
+            
+            messageContainer.appendChild(messageDiv);
+            conversation.appendChild(messageContainer);
+            conversation.scrollTop = conversation.scrollHeight;
+        }
+
+        // Start KYC session
+        document.getElementById('startButton').addEventListener('click', async () => {
+            try {
+                // Get camera and microphone
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: true 
+                });
+                document.getElementById('localVideo').srcObject = localStream;
+                
+                // Get settings for the session
+                const loanType = document.getElementById('loanType').value;
+                const applicantInfo = {
+                    name: document.getElementById('applicantName').value,
+                    id_number: document.getElementById('applicantId').value,
+                    contact: document.getElementById('applicantContact').value
+                };
+
+                // Start KYC session with API
+                const response = await fetch('/api/video-kyc/start-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        loan_type: loanType,
+                        applicant_info: applicantInfo
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error: ${response.status} - ${errorText || response.statusText}`);
+                }
+                
+                const responseText = await response.text();
+                if (!responseText.trim()) {
+                    throw new Error('Empty response from server');
+                }
+                
+                const data = JSON.parse(responseText);
+                sessionId = data.session_id;
+                log(`Session created: ${sessionId}`);
+
+                // Connect WebRTC
+                connectWebRTC(data.rtc_websocket_url);
+                
+                // Connect conversation WebSocket
+                connectConversationWS(data.conversation_websocket_url);
+                
+                // Connect verification WebSocket
+                const verifyWsUrl = `/api/webrtc/ws/verify-face-live/${sessionId}`;
+                connectVerificationWS(verifyWsUrl);
+                
+                // Update UI
+                document.getElementById('startButton').disabled = true;
+                document.getElementById('endButton').disabled = false;
+                document.getElementById('captureReferenceBtn').disabled = false;
+                document.getElementById('messageInput').disabled = false;
+                document.getElementById('sendButton').disabled = false;
+                
+                // Welcome message
+                addMessage("Welcome to Standard Chartered Video KYC. Please capture a reference image to begin verification.", false);
+                
+            } catch (error) {
+                log(`Error starting session: ${error.message}`);
+                showError(`Failed to start session: ${error.message}`);
+                console.error(error);
+            }
+        });
+
+        // Connect WebRTC
+        function connectWebRTC(wsUrl) {
+            // Create peer connection
+            pc = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            });
+            
+            // Add local stream tracks
+            localStream.getTracks().forEach(track => {
+                pc.addTrack(track, localStream);
+            });
+            
+            // Handle remote tracks
+            pc.ontrack = event => {
+                document.getElementById('remoteVideo').srcObject = event.streams[0];
+            };
+            
+            // Connect WebSocket for signaling
+            const fullWsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${wsUrl}`;
+            log(`Connecting to WebRTC signaling at ${fullWsUrl}`);
+            rtcWs = new WebSocket(fullWsUrl);
+            
+            rtcWs.onopen = async () => {
+                log('WebRTC signaling connected');
+                document.getElementById('connectionIndicator').className = 'status-indicator status-connected';
+                document.getElementById('connectionStatus').textContent = 'Connected';
+                
+                // Create and send offer
+                try {
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    
+                    rtcWs.send(JSON.stringify({
+                        type: offer.type,
+                        sdp: offer.sdp
+                    }));
+                    log('Sent WebRTC offer');
+                } catch (error) {
+                    log(`Error creating WebRTC offer: ${error.message}`);
+                    showError(`WebRTC connection error: ${error.message}`);
+                }
+            };
+            
+            rtcWs.onmessage = async (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    log(`Received WebRTC message: ${message.type}`);
+                    
+                    if (message.type === 'answer') {
+                        const answer = new RTCSessionDescription({
+                            type: message.type,
+                            sdp: message.sdp
+                        });
+                        await pc.setRemoteDescription(answer);
+                        log('Set remote description');
+                    } else if (message.type === 'error') {
+                        log(`WebRTC error: ${message.error}`);
+                        showError(`WebRTC error: ${message.error}`);
+                    }
+                } catch (error) {
+                    log(`Error processing WebRTC message: ${error.message}`);
+                }
+            };
+            
+            rtcWs.onerror = (error) => {
+                log(`WebRTC signaling error: ${error.message || "Connection failed"}`);
+                showError('WebRTC connection failed. Please try again.');
+            };
+            
+            rtcWs.onclose = () => {
+                log('WebRTC signaling disconnected');
+                document.getElementById('connectionIndicator').className = 'status-indicator status-disconnected';
+                document.getElementById('connectionStatus').textContent = 'Disconnected';
+            };
+        }
+
+        // Connect conversation WebSocket
+        function connectConversationWS(wsUrl) {
+            const fullWsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${wsUrl}`;
+            log(`Connecting to KYC conversation at ${fullWsUrl}`);
+            kycWs = new WebSocket(fullWsUrl);
+            
+            kycWs.onopen = () => {
+                log('KYC conversation WebSocket connected');
+            };
+            
+            kycWs.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    log(`Received KYC message: ${JSON.stringify(message)}`);
+                    
+                    // Handle different message types
+                    if (message.type === 'agent_message') {
+                        addMessage(message.message, false);
+                    } else if (message.type === 'transcription_received') {
+                        // Recognition of what user said
+                        log(`Transcription received: ${message.message}`);
+                    }
+                } catch (error) {
+                    log(`Error processing KYC message: ${error.message}`);
+                }
+            };
+            
+            kycWs.onerror = (error) => {
+                log(`KYC conversation error: ${error.message || "Connection failed"}`);
+            };
+            
+            kycWs.onclose = () => {
+                log('KYC conversation WebSocket closed');
+            };
+        }
+
+        // Connect verification WebSocket
+        function connectVerificationWS(wsUrl) {
+            const fullWsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${wsUrl}`;
+            log(`Connecting to face verification at ${fullWsUrl}`);
+            verificationWs = new WebSocket(fullWsUrl);
+            
+            verificationWs.onopen = () => {
+                log('Face verification WebSocket connected');
+            };
+            
+            verificationWs.onmessage = (event) => {
+                try {
+                    const result = JSON.parse(event.data);
+                    log(`Verification result: ${JSON.stringify(result)}`);
+                    
+                    if (result.type === 'verification_result') {
+                        updateVerificationStatus(result);
+                    } else if (result.type === 'error') {
+                        log(`Verification error: ${result.message}`);
+                        document.getElementById('verificationStatus').innerHTML = 
+                            `<span style="color:red">Error: ${result.message}</span>`;
+                    }
+                } catch (error) {
+                    log(`Error processing verification message: ${error.message}`);
+                }
+            };
+            
+            verificationWs.onerror = (error) => {
+                log(`Face verification error: ${error.message || "Connection failed"}`);
+            };
+            
+            verificationWs.onclose = () => {
+                log('Face verification WebSocket closed');
+            };
+        }
+
+        // Update verification status UI
+        function updateVerificationStatus(result) {
+            const verificationDiv = document.getElementById('verificationStatus');
+            
+            if (result.verified) {
+                verificationDiv.className = 'verification-status success';
+                verificationDiv.innerHTML = `<strong>Verified</strong><br>Confidence: ${(result.confidence * 100).toFixed(2)}%`;
+            } else {
+                verificationDiv.className = 'verification-status danger';
+                let message = `<strong>Not Verified</strong><br>Confidence: ${(result.confidence * 100).toFixed(2)}%`;
+                
+                if (result.error) {
+                    message += `<br>Error: ${result.error}`;
+                }
+                
+                if (result.consecutive_failures) {
+                    message += `<br>Warning: ${result.consecutive_failures} consecutive failures`;
+                }
+                
+                if (result.action_required === 're_authenticate') {
+                    message += `<br><strong>Security Alert: Please re-authenticate!</strong>`;
+                }
+                
+                verificationDiv.innerHTML = message;
+            }
+        }
+
+        // Capture reference image for face verification
+        document.getElementById('captureReferenceBtn').addEventListener('click', async () => {
+            try {
+                const video = document.getElementById('localVideo');
+                
+                if (!video.srcObject) {
+                    throw new Error('Camera not active');
+                }
+                
+                // Create a canvas to capture the image
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+                
+                // Convert to base64
+                const imageBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
+                
+                // Send to server
+                const response = await fetch(`/api/webrtc/set-reference-image/${sessionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ image: imageBase64 })
+                });
+                
+                if (response.ok) {
+                    // Display reference image
+                    const refImg = document.getElementById('referenceImg');
+                    refImg.src = canvas.toDataURL('image/jpeg');
+                    refImg.style.display = 'block';
+                    
+                    log('Reference image captured successfully');
+                    document.getElementById('verificationStatus').textContent = 'Verifying...';
+                    
+                    // Inform the conversation
+                    addMessage("Thank you. Now I'll verify your identity against the reference image.", false);
+                    addMessage("Please wait while the verification is in progress...", false);
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`Server error: ${response.status} - ${errorText || response.statusText}`);
+                }
+            } catch (error) {
+                log(`Error capturing reference image: ${error.message}`);
+                showError(`Failed to capture reference image: ${error.message}`);
+            }
+        });
+
+        // Send message button handler
+        document.getElementById('sendButton').addEventListener('click', () => {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (message && kycWs && kycWs.readyState === WebSocket.OPEN) {
+                // Send message to server
+                kycWs.send(JSON.stringify({
+                    type: 'user_message',
+                    message: message
+                }));
+                
+                // Add to conversation
+                addMessage(message, true);
+                
+                // Clear input
+                messageInput.value = '';
+            }
+        });
+
+        // Allow sending messages with Enter key
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('sendButton').click();
+            }
+        });
+
+        // End session button handler
+        document.getElementById('endButton').addEventListener('click', async () => {
+            try {
+                // Notify server about session end
+                if (sessionId) {
+                    await fetch(`/api/video-kyc/end-session/${sessionId}`, {
+                        method: 'POST'
+                    });
+                    log('Session ended on server');
+                }
+                
+                // Close all WebSockets
+                if (rtcWs) rtcWs.close();
+                if (kycWs) kycWs.close();
+                if (verificationWs) verificationWs.close();
+                
+                // Stop all tracks
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                }
+                
+                // Close peer connection
+                if (pc) pc.close();
+                
+                // Reset videos
+                document.getElementById('localVideo').srcObject = null;
+                document.getElementById('remoteVideo').srcObject = null;
+                
+                // Reset UI
+                document.getElementById('startButton').disabled = false;
+                document.getElementById('endButton').disabled = true;
+                document.getElementById('captureReferenceBtn').disabled = true;
+                document.getElementById('messageInput').disabled = true;
+                document.getElementById('sendButton').disabled = true;
+                document.getElementById('verificationStatus').textContent = 'Not started';
+                document.getElementById('referenceImg').style.display = 'none';
+                document.getElementById('connectionIndicator').className = 'status-indicator status-disconnected';
+                document.getElementById('connectionStatus').textContent = 'Disconnected';
+                
+                sessionId = null;
+                log('Session ended');
+                addMessage("The KYC session has ended. Thank you for using Standard Chartered Video KYC.", false);
+            } catch (error) {
+                log(`Error ending session: ${error.message}`);
+                showError(`Error ending session: ${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html>

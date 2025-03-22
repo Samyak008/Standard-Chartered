@@ -1,8 +1,13 @@
 # Byte-compiled / optimized / DLL files
+node_modules
 __pycache__/
 *.py[cod]
 *$py.class
+<<<<<<< HEAD
+*myenv
+=======
 
+>>>>>>> aec377340ca8cd9f034a3b74a2b865b5e7a4bdf0
 # C extensions
 *.so
 
@@ -171,4 +176,8 @@ cython_debug/
 .ruff_cache/
 
 # PyPI configuration file
+<<<<<<< HEAD
 .pypirc
+=======
+.pypirc
+>>>>>>> aec377340ca8cd9f034a3b74a2b865b5e7a4bdf0

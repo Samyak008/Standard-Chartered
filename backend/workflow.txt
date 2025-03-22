@@ -1,0 +1,58 @@
+🎥 1️⃣ Introduction & Loan Selection
+🎙️ Script:
+Video 1: Introduction & Options
+
+“Hello! Welcome to Standard Chartered’s Loan Assistance. I’m here to guide you through a quick and easy loan application process. You can either apply for a loan or check the status of an existing application.
+
+👉 Please choose one of the options below:
+
+Apply for a Loan.
+Check Application Status.”
+✅ Branches:
+
+Apply for a Loan:
+“Great! Let’s get started by selecting the type of loan you’re interested in.” ➡️ Loan Type Selection.
+Check Application Status:
+“Please enter your application reference number to check the current status of your loan.” ➡️ Redirect to Status Page.
+
+
+🎥 2️⃣ Loan Type Selection
+🎙️ Script:
+Video 2: Loan Type Selection
+
+“Let’s explore the loan options available for you. Please select the type of loan that suits your needs:
+
+Home Loan – Finance your dream home, required docs, location, value, etc. .
+Car Loan – Drive your dream car, "" "".
+Education Loan – Invest in your future., "" ""”
+Business Loan - Scale your business to hge scales., gst reg, itr, assests liab, etc`
+✅ Branches:
+
+
+🎥 3️⃣ Income Verification
+🎙️ Script:
+Video 3: Income Verification
+
+“To offer you the best loan options, I’ll need some information about your income. Please choose your income range:
+
+Below ₹5 Lakhs per year.
+₹5 Lakhs to ₹10 Lakhs per year.
+Above ₹10 Lakhs per year.
+Self-Employed or Business Owner.”
+✅ Branches:
+
+Below ₹5L:
+“We have low EMI options available for you. Let’s proceed by uploading the required documents.” ➡️ Document Upload. + keep it handy and shit
+₹5L – ₹10L:
+“You qualify for multiple loan options. Let’s move ahead with the document verification.” ➡️ Document Upload.
+Above ₹10L:
+“Great! We can offer premium loan options with flexible terms. Please upload your documents to proceed.” ➡️ Document Upload.
+Self-Employed:
+“Please upload your income proof, such as ITRs or business statements.” ➡️ Document Upload.
+🎥 4️⃣ Document Upload
+🎙️ Script:
+Video 4: Document Upload
+
+“To complete your application, we need some documents. Please upload the following:
+
+

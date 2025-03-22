@@ -1,5 +1,5 @@
+# Core dependencies
 FastAPI
-Flask
 uvicorn
 opencv-python
 pytesseract
@@ -11,3 +11,34 @@ requests
 pytest
 pytest-cov
 mypy
+
+# WebRTC and WebSocket dependencies
+aiortc
+websockets
+
+# Face recognition
+deepface
+facenet-pytorch
+
+# Audio processing
+openai-whisper
+vosk
+
+# Async processing
+celery
+redis
+
+# Machine Learning
+tensorflow
+tf-keras
+torch
+
+# NLP and Chatbot
+langchain
+langchain-community
+langchain-openai
+langchain-groq
+
+crewai
+crewai[tools]
+starlette
