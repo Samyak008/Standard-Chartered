@@ -19,6 +19,20 @@ export async function POST(request) {
       userid,
     } = await request.json();
 
+    // Log received request data
+    console.log("Received request with data:", {
+      age,
+      gender,
+      maritalStatus,
+      educationLevel,
+      employmentStatus,
+      incomeType,
+      additionalIncome: additionalIncome || false,
+      existingLoan: existingLoan || false,
+      monthlyIncome,
+      userid,
+    });
+
     // Validate required fields
     const requiredFields = {
       age,
@@ -149,8 +163,17 @@ Please return your response in the following JSON format without any additional 
       reasoningExplanation: loanData.reasoningExplanation,
     });
 
+    // Log about to save loan suggestion
+    console.log("About to save loan suggestion:", loanSuggestion);
+
     // Save to database
     await loanSuggestion.save();
+
+    // Log successfully saved loan suggestion
+    console.log(
+      "Successfully saved loan suggestion with ID:",
+      loanSuggestion._id
+    );
 
     return NextResponse.json(
       {
