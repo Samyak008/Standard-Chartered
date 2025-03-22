@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -9,49 +8,6 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 export default function LoanEligibilityPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState(null);
-  const [formData, setFormData] = useState({
-    loan_purpose: '',
-    loan_amount: '',
-    loan_term: '',
-    credit_score: '',
-    income: '',
-    employment_length: '',
-    debt_to_income_ratio: '',
-    has_coi: false,
-    has_collateral: false,
-    has_employment_guarantee: false
-  });
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch('/api/loan/process', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to process loan application');
-      }
-
-      setResults(data);
-      
-    } catch (error) {
-      console.error('Error:', error);
-      // Handle error display
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -130,30 +86,16 @@ export default function LoanEligibilityPage() {
           </div>
         </div>
 
-        {/* Loan Eligibility Form */}
+        {/* Loan Eligibility Form will go here - you'll implement this part */}
         <div className="backdrop-blur-md bg-gray-800/50 p-6 rounded-xl border border-gray-700/50">
           <h3 className="text-xl font-semibold text-white mb-6">
             Loan Application
           </h3>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Add your form fields here */}
-          </form>
-
-          {/* Results */}
-          {results && (
-            <div className="mt-8 space-y-6">
-              <div className="bg-white/5 p-6 rounded-lg border border-purple-500/20">
-                <h3 className="text-xl font-semibold text-white mb-4">Loan Options</h3>
-                <div className="prose prose-invert">{results.loan_options}</div>
-              </div>
-
-              <div className="bg-white/5 p-6 rounded-lg border border-purple-500/20">
-                <h3 className="text-xl font-semibold text-white mb-4">Risk Analysis</h3>
-                <div className="prose prose-invert">{results.risk_analysis}</div>
-              </div>
-            </div>
-          )}
+          {/* You'll implement the form here */}
+          <div className="p-8 text-center text-gray-400">
+            <p>Loan eligibility form will be implemented here.</p>
+          </div>
         </div>
       </div>
     </DashboardLayout>
