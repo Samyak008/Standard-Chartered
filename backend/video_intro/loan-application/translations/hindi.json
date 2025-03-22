@@ -1,0 +1,69 @@
+{
+    "welcome_title": "स्टैंडर्ड चार्टर्ड बैंक में आपका स्वागत है",
+    "welcome_description": "कृपया जारी रखने के लिए एक विकल्प चुनें।",
+    "language_selector": "अपनी पसंदीदा भाषा चुनें:",
+    "intro_options": [
+        {
+            "id": "new_loan",
+            "title": "नया ऋण के लिए आवेदन करें",
+            "description": "नए ऋण आवेदन प्रक्रिया शुरू करें",
+            "video_path": "videos/hindi/1ST VID.mp4",
+            "next_step": "loan_type"
+        },
+        {
+            "id": "check_status",
+            "title": "आवेदन की स्थिति जांचें",
+            "description": "अपने मौजूदा आवेदन की स्थिति जांचें",
+            "video_path": "videos/hindi/check_status.mp4",
+            "next_step": "status_check"
+        }
+    ],
+    "status_check_title": "आवेदन स्थिति जांच",
+    "status_check_description": "स्थिति जांचने के लिए कृपया अपना आवेदन संदर्भ नंबर दर्ज करें।",
+    "reference_number_placeholder": "अपना आवेदन संदर्भ नंबर दर्ज करें",
+    "check_status_button": "सलाहकार के साथ स्थिति जांचें",
+    "loan_type_title": "अपना ऋण प्रकार चुनें",
+    "loan_type_description": "अपनी जरूरतों के अनुसार ऋण का प्रकार चुनें।",
+    "loan_types": [
+        {
+            "id": "home",
+            "title": "होम लोन",
+            "description": "प्रतिस्पर्धी ब्याज दरों के साथ अपने सपनों का घर वित्त करें",
+            "video_path": "videos/hindi/3RD VID.mp4",
+            "next_step": "loan_info"
+        },
+        {
+            "id": "car",
+            "title": "कार लोन",
+            "description": "किफायती वित्तपोषण के साथ अपनी सपनों की कार चलाएं",
+            "video_path": "videos/hindi/3RD VID.mp4",
+            "next_step": "loan_info"
+        },
+        {
+            "id": "education",
+            "title": "शिक्षा ऋण",
+            "description": "शिक्षा वित्तपोषण के साथ अपने भविष्य में निवेश करें",
+            "video_path": "videos/hindi/3RD VID.mp4",
+            "next_step": "loan_info"
+        },
+        {
+            "id": "business",
+            "title": "व्यापार ऋण",
+            "description": "हमारे वित्तीय समाधानों के साथ अपने व्यवसाय को बढ़ाएं",
+            "video_path": "videos/hindi/3RD VID.mp4",
+            "next_step": "loan_info"
+        }
+    ],
+    "loan_info_title": "ऋण जानकारी",
+    "loan_info_description": "आपके चयनित ऋण प्रकार के बारे में अधिक जानकारी यहां है।",
+    "continue_button": "अगले चरण पर जाएं",
+    "thank_you_title": "धन्यवाद और अगले कदम",
+    "thank_you_description": "आपकी रुचि के लिए धन्यवाद। चलिए दस्तावेज़ सत्यापन और KYC के साथ आगे बढ़ते हैं।",
+    "continue_to_advisor": "ऋण सलाहकार के पास जाएं",
+    "redirecting_message": "वीडियो पूरा हो गया है। आपको शीघ्र ही ऋण सलाहकार के पास भेज दिया जाएगा...",
+    "start_over": "फिर से शुरू करें",
+    "your_selection": "आपका चयन",
+    "selected_action": "चयनित कार्रवाई",
+    "loan_type_label": "ऋण प्रकार",
+    "kyc_message": "आगे बढ़ने से पहले  हमें आपके दस्तावेजों का सत्यापन और KYC पूरा करना होगा।"
+}
