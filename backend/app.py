@@ -47,19 +47,23 @@ app.include_router(video_kyc_controller.router, prefix="/api/video-kyc", tags=["
 @app.get("/test-client")
 async def get_test_client():
     """Serve the test client HTML page"""
-    return FileResponse("backend/test_client.html")
+    file_path = os.path.join(os.path.dirname(__file__), "test_client.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    else:
+        raise HTTPException(status_code=404, detail="Test client HTML file not found")
 
 @app.get("/video-kyc-client")
 async def video_kyc_client():
     """Serve the Video KYC client page"""
     file_path = os.path.join(os.path.dirname(__file__), "video_kyc_client.html")
     return FileResponse(file_path)
+
 @app.get("/")
 async def root():
     return {"message": "Virtual Branch Manager API is running"}
+
 if __name__ == "__main__":
-    
-    
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
     debug = os.getenv("DEBUG", "True").lower() == "true"

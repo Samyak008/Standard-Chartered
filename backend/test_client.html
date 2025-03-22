@@ -99,477 +99,249 @@
     <div id="log"></div>
     
     <script>
-        const API_BASE = 'http://localhost:8000/api';
-        let pc; // RTCPeerConnection
+        // Variables
+        let pc;
         let localStream;
-        let sessionId;
         let signallingWs;
         let verificationWs;
-        let chatWs;
-
-        // Add log message with timestamp
+        let mediaRecorder;
+        let audioChunks = [];
+        const sessionId = Date.now().toString();
+        console.log("Using session ID:", sessionId);
+        const API_BASE = "http://localhost:8000/api/webrtc"; // Update this to match your API base
+        
+        // Functions
         function log(message) {
+            console.log(message);
             const logDiv = document.getElementById('log');
-            const now = new Date().toLocaleTimeString();
-            logDiv.innerHTML += `<div>[${now}] ${message}</div>`;
-            logDiv.scrollTop = logDiv.scrollHeight;
+            if (logDiv) {
+                const p = document.createElement('p');
+                p.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+                logDiv.appendChild(p);
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
         }
         
-        // Start call
+        // Setup audio recording function
+        function setupAudioRecording(stream) {
+            try {
+                // Get audio track
+                const audioTrack = stream.getAudioTracks()[0];
+                if (!audioTrack) {
+                    log('❌ No audio track found in stream');
+                    return;
+                }
+                
+                const audioStream = new MediaStream([audioTrack]);
+                
+                // Find supported MIME type
+                const mimeTypes = [
+                    'audio/webm',
+                    'audio/webm;codecs=opus',
+                    'audio/ogg;codecs=opus',
+                    'audio/mp4'
+                ];
+                
+                let options = {};
+                for (const type of mimeTypes) {
+                    if (MediaRecorder.isTypeSupported(type)) {
+                        options.mimeType = type;
+                        log(`✅ Using MIME type: ${type}`);
+                        break;
+                    }
+                }
+                
+                // Create MediaRecorder
+                mediaRecorder = new MediaRecorder(audioStream, options);
+                
+                // Handle audio data
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                        
+                        // Convert to base64 and send to server
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            const base64data = reader.result.split(',')[1];
+                            
+                            if (signallingWs && signallingWs.readyState === WebSocket.OPEN) {
+                                signallingWs.send(JSON.stringify({
+                                    type: 'audio',
+                                    data: base64data
+                                }));
+                            }
+                        };
+                        reader.readAsDataURL(event.data);
+                    }
+                };
+                
+                // Start recording
+                mediaRecorder.start(1000); // Collect data every second
+                log('🎙️ Voice recording started - Audio will be transcribed at the end of the call');
+            } catch (e) {
+                log(`❌ Error initializing audio recording: ${e.message}`);
+            }
+        }
+        
+        // Start call button event listener
         document.getElementById('startCall').addEventListener('click', async () => {
             try {
-                // Request camera/microphone access
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                log('Starting call...');
+                
+                // Get user media streams
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: true 
+                });
                 document.getElementById('localVideo').srcObject = localStream;
                 
-                // Get session ID from backend
-                const response = await fetch(`${API_BASE}/webrtc/start-video-call`, {
-                    method: 'POST'
-                });
-                const data = await response.json();
-                sessionId = data.session_id;
-                log(`Session created: ${sessionId}`);
-                
-                // Create WebRTC connection
+                // Setup WebRTC connection
                 pc = new RTCPeerConnection({
                     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
                 });
                 
-                // Add local stream tracks to connection
+                // Add tracks to peer connection
                 localStream.getTracks().forEach(track => {
                     pc.addTrack(track, localStream);
                 });
                 
-                // Handle incoming tracks (remote video)
+                // Handle ICE candidates
+                pc.onicecandidate = event => {
+                    if (event.candidate && signallingWs) {
+                        signallingWs.send(JSON.stringify({
+                            type: 'ice',
+                            candidate: event.candidate
+                        }));
+                    }
+                };
+                
+                // Handle remote track
                 pc.ontrack = event => {
                     document.getElementById('remoteVideo').srcObject = event.streams[0];
                 };
                 
-                // Create and set local description
+                // Create offer
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
                 
-                // Connect WebSocket for signaling
-                const wsUrl = `ws://localhost:8000/api/webrtc/ws/rtc/${sessionId}`;
-                signallingWs = new WebSocket(wsUrl);
+                // Setup WebSocket connection for signaling
+                signallingWs = new WebSocket(`ws://localhost:8000/api/webrtc/ws/rtc/${sessionId}`);
                 
                 signallingWs.onopen = () => {
                     document.getElementById('status').className = 'status connected';
                     document.getElementById('status').textContent = 'Status: Connected';
-                    document.getElementById('startCall').disabled = true;
-                    document.getElementById('endCall').disabled = false;
                     
                     // Send offer to server
                     signallingWs.send(JSON.stringify({
                         type: offer.type,
                         sdp: offer.sdp
                     }));
-                    log('Sent WebRTC offer to server');
+                    
+                    // Start audio recording
+                    setupAudioRecording(localStream);
+                    
+                    // Update UI
+                    document.getElementById('startCall').disabled = true;
+                    document.getElementById('endCall').disabled = false;
+                    
+                    log('Call started successfully');
                 };
                 
                 signallingWs.onmessage = async (event) => {
                     const message = JSON.parse(event.data);
-                    log(`Received message: ${message.type}`);
                     
                     if (message.type === 'answer') {
-                        const remoteDesc = new RTCSessionDescription({
-                            type: message.type,
-                            sdp: message.sdp
-                        });
-                        await pc.setRemoteDescription(remoteDesc);
-                        log('Set remote description');
+                        // Set remote description
+                        await pc.setRemoteDescription(new RTCSessionDescription(message));
+                        log('Remote description set');
+                    } else if (message.type === 'ice') {
+                        // Add ICE candidate
+                        if (message.candidate) {
+                            await pc.addIceCandidate(message.candidate);
+                        }
+                    } else if (message.type === 'transcription') {
+                        // Display transcription
+                        log(`📝 Transcription: ${message.transcript}`);
                     }
                 };
                 
-                // Connect WebSocket for face verification
-                const verifyWsUrl = `ws://localhost:8000/api/webrtc/ws/verify-face-live/${sessionId}`;
-                verificationWs = new WebSocket(verifyWsUrl);
-                
-                verificationWs.onmessage = (event) => {
-                    const result = JSON.parse(event.data);
-                    log(`Verification message: ${JSON.stringify(result)}`);
-                    
-                    if (result.type === 'verification_result') {
-                        const status = result.verified ? 'Verified' : 'Not Verified';
-                        const confidence = (result.confidence * 100).toFixed(2);
-                        const statusClass = result.verified ? 'verification-success' : 'verification-failed';
-                        
-                        let html = `Status: <span class="${statusClass}">${status}</span><br>`;
-                        html += `Confidence: ${confidence}%<br>`;
-                        
-                        // Add error message if present
-                        if (result.error) {
-                            html += `<span class="verification-failed">Error: ${result.error}</span><br>`;
-                        }
-                        
-                        // Add warning for consecutive failures
-                        if (result.consecutive_failures) {
-                            html += `<span class="verification-warning">Warning: ${result.consecutive_failures} consecutive verification failures</span><br>`;
-                        }
-                        
-                        // Add re-authentication notice
-                        if (result.action_required === 're_authenticate') {
-                            html += `<span class="verification-alert">Security Alert: Please re-authenticate!</span><br>`;
-                            
-                            // Optional: Auto-trigger re-capture
-                            if (!document.getElementById('reauth-triggered')) {
-                                html += `<button id="reauth-now" class="alert-button">Re-authenticate Now</button>`;
-                                setTimeout(() => {
-                                    const reauthBtn = document.getElementById('reauth-now');
-                                    if (reauthBtn) {
-                                        reauthBtn.addEventListener('click', () => {
-                                            document.getElementById('captureReference').click();
-                                        });
-                                    }
-                                }, 100);
-                                
-                                // Add a flag to prevent multiple buttons
-                                const flagElem = document.createElement('span');
-                                flagElem.id = 'reauth-triggered';
-                                flagElem.style.display = 'none';
-                                document.body.appendChild(flagElem);
-                            }
-                        }
-                        
-                        html += `Time: ${new Date().toLocaleTimeString()}`;
-                        
-                        document.getElementById('faceVerification').innerHTML = html;
-                        log(`Face verification: ${status} (${confidence}%)${result.error ? ' - Error: ' + result.error : ''}`);
-                    } else if (result.type === 'error') {
-                        document.getElementById('faceVerification').innerHTML = 
-                            `<span class="verification-failed">Error: ${result.message}</span>`;
-                        log(`Verification error: ${result.message}`);
-                    }
+                signallingWs.onerror = (error) => {
+                    log(`WebSocket error: ${error}`);
                 };
-
-                // Initialize chat when a call starts
-                initializeChat(sessionId);
+                
+                signallingWs.onclose = () => {
+                    log('WebSocket connection closed');
+                    document.getElementById('status').className = 'status disconnected';
+                    document.getElementById('status').textContent = 'Status: Disconnected';
+                };
                 
             } catch (error) {
-                log(`Error: ${error.message}`);
-                console.error(error);
+                log(`❌ Error starting call: ${error.message}`);
             }
         });
         
-        // End call
-        document.getElementById('endCall').addEventListener('click', () => {
-            if (signallingWs) {
-                signallingWs.send(JSON.stringify({ type: 'disconnect' }));
-                signallingWs.close();
-            }
-            
-            if (verificationWs) {
-                verificationWs.close();
-            }
-            
-            if (pc) {
-                pc.close();
-            }
-            
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-            }
-            
-            if (chatWs) {
-                chatWs.close();
-            }
-
-            if (kycWs) {
-                kycWs.close();
-            }
-
-            document.getElementById('localVideo').srcObject = null;
-            document.getElementById('remoteVideo').srcObject = null;
-            document.getElementById('status').className = 'status disconnected';
-            document.getElementById('status').textContent = 'Status: Disconnected';
-            document.getElementById('startCall').disabled = false;
-            document.getElementById('endCall').disabled = true;
-            document.getElementById('faceVerification').textContent = 'Not started';
-            
-            log('Call ended');
-        });
-        
-        // Capture reference image explicitly
-        document.getElementById('captureReference').addEventListener('click', async () => {
-            if (!sessionId) {
-                log('Error: Start a call first');
-                return;
-            }
-            
+        // End call button event listener
+        document.getElementById('endCall').addEventListener('click', async () => {
             try {
-                // Take a snapshot from the local video
-                const video = document.getElementById('localVideo');
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0);
+                log('Ending call...');
                 
-                // Convert to base64
-                const imageBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
+                // Stop media recorder if active
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                    log('🎙️ Voice recording stopped');
+                }
                 
-                // Send to server
-                const response = await fetch(`${API_BASE}/webrtc/set-reference-image/${sessionId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        image: imageBase64
-                    })
-                });
+                // Small delay to ensure all audio data is processed
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
-                if (response.ok) {
-                    // Display the reference image
-                    document.getElementById('referenceImage').src = canvas.toDataURL('image/jpeg');
-                    document.getElementById('referenceImage').style.display = 'block';
-                    log('Reference image captured');
+                // Request transcription from server
+                try {
+                    const response = await fetch(`${API_BASE}/end-call/${sessionId}`, {
+                        method: 'GET'
+                    });
                     
-                    // Start verification after reference image is set
-                    startFaceVerification();
-                } else {
-                    const error = await response.json();
-                    log(`Error setting reference image: ${error.detail}`);
-                }
-            } catch (error) {
-                log(`Error: ${error.message}`);
-                console.error(error);
-            }
-        });
-        
-        // Start face verification process
-        function startFaceVerification() {
-            if (verificationWs && verificationWs.readyState === WebSocket.OPEN) {
-                verificationWs.send(JSON.stringify({
-                    type: 'start_verification'
-                }));
-                log('Started face verification');
-            } else {
-                log('WebSocket not connected. Cannot start verification.');
-            }
-        }
-        
-        // Enhance WebSocket message handling
-        verificationWs.onmessage = (event) => {
-            const result = JSON.parse(event.data);
-            log(`Verification message: ${JSON.stringify(result)}`);
-            
-            if (result.type === 'verification_result') {
-                const status = result.verified ? 'Verified' : 'Not Verified';
-                const confidence = (result.confidence * 100).toFixed(2);
-                const statusClass = result.verified ? 'verification-success' : 'verification-failed';
-                
-                let html = `Status: <span class="${statusClass}">${status}</span><br>`;
-                html += `Confidence: ${confidence}%<br>`;
-                
-                // Add error message if present
-                if (result.error) {
-                    html += `<span class="verification-failed">Error: ${result.error}</span><br>`;
-                }
-                
-                // Add warning for consecutive failures
-                if (result.consecutive_failures) {
-                    html += `<span class="verification-warning">Warning: ${result.consecutive_failures} consecutive verification failures</span><br>`;
-                }
-                
-                // Add re-authentication notice
-                if (result.action_required === 're_authenticate') {
-                    html += `<span class="verification-alert">Security Alert: Please re-authenticate!</span><br>`;
-                    
-                    // Optional: Auto-trigger re-capture
-                    if (!document.getElementById('reauth-triggered')) {
-                        html += `<button id="reauth-now" class="alert-button">Re-authenticate Now</button>`;
-                        setTimeout(() => {
-                            const reauthBtn = document.getElementById('reauth-now');
-                            if (reauthBtn) {
-                                reauthBtn.addEventListener('click', () => {
-                                    document.getElementById('captureReference').click();
-                                });
-                            }
-                        }, 100);
-                        
-                        // Add a flag to prevent multiple buttons
-                        const flagElem = document.createElement('span');
-                        flagElem.id = 'reauth-triggered';
-                        flagElem.style.display = 'none';
-                        document.body.appendChild(flagElem);
+                    if (response.ok) {
+                        const result = await response.json();
+                        log(`📝 Transcription complete: ${result.transcript}`);
+                        log(`📂 JSON file saved in backend/transcriptions/${sessionId}_transcription.json`);
+                    } else {
+                        log('❌ Error getting transcription');
                     }
+                } catch (fetchError) {
+                    log(`❌ Error fetching transcription: ${fetchError.message}`);
                 }
                 
-                html += `Time: ${new Date().toLocaleTimeString()}`;
+                // Clean up WebRTC connection
+                if (pc) {
+                    pc.close();
+                }
                 
-                document.getElementById('faceVerification').innerHTML = html;
-                log(`Face verification: ${status} (${confidence}%)${result.error ? ' - Error: ' + result.error : ''}`);
-            } else if (result.type === 'error') {
-                document.getElementById('faceVerification').innerHTML = 
-                    `<span class="verification-failed">Error: ${result.message}</span>`;
-                log(`Verification error: ${result.message}`);
-            }
-        };
-
-        // Function to initialize chat
-        function initializeChat(sessionId) {
-            const chatWsUrl = `ws://localhost:8000/api/webrtc/ws/chat/${sessionId}`;
-            chatWs = new WebSocket(chatWsUrl);
-            
-            chatWs.onopen = () => {
-                log('Chat connection established');
-                displayChatMessage('System', 'Connected to loan advisor. How can I help you today?');
-            };
-            
-            chatWs.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                log(`Chat message received: ${JSON.stringify(message)}`);
-                displayChatMessage('Advisor', message.text);
-            };
-            
-            chatWs.onerror = (error) => {
-                log('Chat WebSocket error');
-                console.error(error);
-            };
-            
-            chatWs.onclose = () => {
-                log('Chat connection closed');
-            };
-            
-            document.getElementById('send-message').addEventListener('click', sendChatMessage);
-            document.getElementById('chat-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') sendChatMessage();
-            });
-        }
-
-        // Function to send chat messages
-        function sendChatMessage() {
-            const inputElement = document.getElementById('chat-input');
-            const message = inputElement.value.trim();
-            
-            if (message && chatWs && chatWs.readyState === WebSocket.OPEN) {
-                chatWs.send(JSON.stringify({
-                    type: 'message',
-                    text: message
-                }));
+                // Stop all tracks
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                }
                 
-                displayChatMessage('You', message);
-                inputElement.value = '';
+                // Close WebSocket connections
+                if (signallingWs) {
+                    signallingWs.close();
+                }
+                
+                if (verificationWs) {
+                    verificationWs.close();
+                }
+                
+                // Reset UI
+                document.getElementById('status').className = 'status disconnected';
+                document.getElementById('status').textContent = 'Status: Disconnected';
+                document.getElementById('startCall').disabled = false;
+                document.getElementById('endCall').disabled = true;
+                
+                log('Call ended successfully');
+                
+            } catch (error) {
+                log(`❌ Error ending call: ${error.message}`);
             }
-        }
-
-        // Function to display chat messages
-        function displayChatMessage(sender, text) {
-            const chatContainer = document.getElementById('chat-container');
-            const messageElement = document.createElement('div');
-            messageElement.style.marginBottom = '10px';
-            
-            const senderSpan = document.createElement('strong');
-            senderSpan.textContent = sender + ': ';
-            senderSpan.style.color = sender === 'You' ? '#007bff' : '#28a745';
-            
-            const textSpan = document.createElement('span');
-            textSpan.textContent = text;
-            
-            messageElement.appendChild(senderSpan);
-            messageElement.appendChild(textSpan);
-            chatContainer.appendChild(messageElement);
-            
-            // Scroll to bottom
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        // KYC WebSocket
-        let kycWs;
-        
-        // Start KYC process
-        document.getElementById('start-kyc').addEventListener('click', () => {
-            if (!sessionId) {
-                log('Error: Start a call first to get a session ID');
-                return;
-            }
-            
-            // Initialize KYC WebSocket connection
-            connectToKycChat(sessionId);
         });
-        
-        // Connect to KYC WebSocket
-        function connectToKycChat(sessionId) {
-            // Sample KYC data
-            const kycData = {
-                aadhar_details: "Name: John Doe, DOB: 15/05/1985, Address: 123 Main St, Mumbai, ID: XXXX-XXXX-1234",
-                pan_details: "Name: JOHN DOE, PAN: ABCDE1234F, DOB: 15/05/1985",
-                income: "₹8,00,000 per annum"
-            };
-            
-            const kycWsUrl = `ws://localhost:8000/api/kyc/ws/kyc/${sessionId}`;
-            kycWs = new WebSocket(kycWsUrl);
-            
-            kycWs.onopen = () => {
-                log('KYC verification connection established');
-                displayKycMessage('System', 'Connected to KYC verification service');
-                
-                // Send initial KYC data
-                kycWs.send(JSON.stringify(kycData));
-                log('Sent KYC document data');
-            };
-            
-            kycWs.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                log(`KYC message received: ${JSON.stringify(message)}`);
-                
-                if (message.follow_up_question) {
-                    displayKycMessage('KYC Agent', message.follow_up_question);
-                }
-            };
-            
-            kycWs.onerror = (error) => {
-                log('KYC WebSocket error');
-                console.error(error);
-            };
-            
-            kycWs.onclose = () => {
-                log('KYC verification connection closed');
-            };
-            
-            // Set up send button for KYC responses
-            document.getElementById('send-kyc').addEventListener('click', sendKycResponse);
-            document.getElementById('kyc-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') sendKycResponse();
-            });
-        }
-        
-        // Send KYC response
-        function sendKycResponse() {
-            const inputElement = document.getElementById('kyc-input');
-            const response = inputElement.value.trim();
-            
-            if (response && kycWs && kycWs.readyState === WebSocket.OPEN) {
-                kycWs.send(JSON.stringify({
-                    user_input: response
-                }));
-                
-                displayKycMessage('You', response);
-                inputElement.value = '';
-            }
-        }
-        
-        // Display KYC messages
-        function displayKycMessage(sender, text) {
-            const kycContainer = document.getElementById('kyc-container');
-            const messageElement = document.createElement('div');
-            messageElement.style.marginBottom = '10px';
-            
-            const senderSpan = document.createElement('strong');
-            senderSpan.textContent = sender + ': ';
-            senderSpan.style.color = sender === 'You' ? '#007bff' : '#9c27b0'; // Blue for user, purple for KYC agent
-            
-            const textSpan = document.createElement('span');
-            textSpan.textContent = text;
-            
-            messageElement.appendChild(senderSpan);
-            messageElement.appendChild(textSpan);
-            kycContainer.appendChild(messageElement);
-            
-            // Scroll to bottom
-            kycContainer.scrollTop = kycContainer.scrollHeight;
-        }
     </script>
 </body>
 </html>

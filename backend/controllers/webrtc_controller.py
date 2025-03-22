@@ -2,10 +2,11 @@ import asyncio
 import json
 import logging
 import uuid
+import traceback
 from typing import Dict, Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Body
-from aiortc import RTCSessionDescription
+from aiortc import RTCSessionDescription, RTCPeerConnection, MediaStreamTrack
 
 # Update imports to include the missing functions
 from backend.services.webrtc_service import process_offer, cleanup_peer_connection
@@ -23,6 +24,31 @@ logger = logging.getLogger(__name__)
 
 # Active websocket connections
 active_connections: Dict[str, WebSocket] = {}
+audio_data = {}  # Store audio data for each session
+transcriber = AudioTranscriber()
+
+class AudioReceiver(MediaStreamTrack):
+    kind = "audio"
+    
+    def __init__(self, track, session_id):
+        super().__init__()
+        self.track = track
+        self.session_id = session_id
+        
+        # Initialize buffer for this session if it doesn't exist
+        if session_id not in audio_data:
+            audio_data[session_id] = bytearray()
+    
+    async def recv(self):
+        frame = await self.track.recv()
+        
+        # Store audio data in the buffer
+        if hasattr(frame, "to_ndarray"):
+            audio_samples = frame.to_ndarray()
+            # Convert audio samples to bytes and append to buffer
+            audio_data[self.session_id].extend(audio_samples.tobytes())
+        
+        return frame
 
 @router.get("/")
 async def get_webrtc_root():
@@ -37,62 +63,56 @@ async def get_webrtc_root():
     }
 
 @router.websocket("/ws/rtc/{session_id}")
-async def websocket_endpoint(websocket: WebSocket, session_id: str):
-    """
-    WebSocket endpoint for WebRTC signaling.
-    
-    Args:
-        websocket: WebSocket connection
-        session_id: Session identifier
-    """
+async def websocket_rtc(websocket: WebSocket, session_id: str):
     await websocket.accept()
-    active_connections[session_id] = websocket
+    logger.info(f"📱 New WebSocket connection established for session {session_id}")
     
     try:
+        # Create transcriber with session_id
+        transcriber = AudioTranscriber(session_id)
+        
+        # Store connection and transcriber in active_connections
+        active_connections[session_id] = {
+            "websocket": websocket,
+            "transcriber": transcriber
+        }
+        
+        logger.info(f"✅ Session {session_id} registered in active_connections, total sessions: {len(active_connections)}")
+        
+        # Log the status of active_connections
+        logger.info(f"Active sessions: {list(active_connections.keys())}")
+        
+        # Main message handling loop
         while True:
-            # Receive message
             data = await websocket.receive_text()
             message = json.loads(data)
             
-            # Handle different message types
-            if message["type"] == "offer":
-                # Process WebRTC offer
-                offer = RTCSessionDescription(sdp=message["sdp"], type=message["type"])
-                answer = await process_offer(session_id, offer)
-                
-                await websocket.send_json({
-                    "type": answer.type,
-                    "sdp": answer.sdp
-                })
-                
-            elif message["type"] == "ice_candidate":
-                # Handle ICE candidate
-                # Implementation depends on specific requirements
-                pass
-                
-            elif message["type"] == "disconnect":
-                # Handle disconnect request
-                await cleanup_peer_connection(session_id)
+            # Handle audio data for transcription
+            if message.get("type") == "audio":
+                audio_data = message.get("data")
+                if audio_data:
+                    # Process audio chunk
+                    await transcriber.process_audio_chunk(audio_data)
+            elif message.get("type") == "disconnect":
+                # Handle disconnect message
+                logger.info(f"🔌 Received disconnect request for session {session_id}")
                 break
+            else:
+                # Echo other messages back (signaling)
+                await websocket.send_text(data)
     
     except WebSocketDisconnect:
-        logger.info(f"WebSocket disconnected for session {session_id}")
+        logger.warning(f"🔌 WebSocket disconnected for session {session_id}")
     except Exception as e:
-        logger.error(f"WebSocket error: {str(e)}")
+        logger.error(f"❌ WebSocket error for session {session_id}: {str(e)}")
+        logger.error(traceback.format_exc())
     finally:
-        # Clean up session and connection
-        await cleanup_peer_connection(session_id)
-        if session_id in active_connections:
-            del active_connections[session_id]
+        logger.info(f"WebSocket loop ended for session {session_id}")
+        # Note: Don't remove from active_connections here - we need it for the end-call endpoint
 
 @router.post("/start-video-call")
 async def start_video_call() -> Dict[str, Any]:
-    """
-    Initialize a new video call session.
-    
-    Returns:
-        Dict with session_id for the client to connect to WebSocket
-    """
+    """Initialize a new video call session."""
     session_id = str(uuid.uuid4())
     return {
         "session_id": session_id,
@@ -101,13 +121,7 @@ async def start_video_call() -> Dict[str, Any]:
 
 @router.websocket("/ws/verify-face-live/{session_id}")
 async def face_verification_websocket(websocket: WebSocket, session_id: str):
-    """
-    WebSocket endpoint for live face verification feedback.
-    
-    Args:
-        websocket: WebSocket connection
-        session_id: Session identifier
-    """
+    """WebSocket endpoint for live face verification feedback."""
     await websocket.accept()
     
     try:
@@ -182,13 +196,7 @@ async def set_reference_image(session_id: str, data: Dict[str, str] = Body(...))
 
 @router.websocket("/ws/chat/{session_id}")
 async def chat_websocket(websocket: WebSocket, session_id: str):
-    """
-    WebSocket endpoint for loan advisor chat.
-    
-    Args:
-        websocket: WebSocket connection
-        session_id: Session identifier
-    """
+    """WebSocket endpoint for loan advisor chat."""
     await websocket.accept()
     
     # Initialize chatbot for this session
@@ -219,3 +227,59 @@ async def chat_websocket(websocket: WebSocket, session_id: str):
         logger.info(f"Chat WebSocket disconnected for session {session_id}")
     except Exception as e:
         logger.error(f"Chat WebSocket error: {str(e)}")
+
+@router.get("/end-call/{session_id}")
+async def end_call(session_id: str):
+    """End call and get transcription"""
+    logger.info(f"📞 End call requested for session {session_id}")
+    logger.info(f"Active sessions: {list(active_connections.keys())}")
+    
+    if session_id not in active_connections:
+        logger.warning(f"⚠️ Session {session_id} not found in active_connections!")
+        # For debugging purposes, return a 200 response instead of 404
+        return {
+            "success": False,
+            "session_id": session_id,
+            "error": "Session not found",
+            "active_sessions": list(active_connections.keys())
+        }
+    
+    try:
+        connection = active_connections[session_id]
+        transcriber = connection["transcriber"]
+        
+        # Generate final transcription
+        logger.info(f"Starting transcription for session {session_id}")
+        transcript = await transcriber.transcribe_all()
+        logger.info(f"Transcription completed for session {session_id}")
+        
+        # Send transcription to client
+        try:
+            websocket = connection["websocket"]
+            await websocket.send_text(json.dumps({
+                "type": "transcription",
+                "transcript": transcript
+            }))
+            logger.info(f"Sent transcription to client for session {session_id}")
+        except Exception as e:
+            logger.error(f"Error sending transcription: {str(e)}")
+        
+        # Return response
+        return {
+            "success": True, 
+            "session_id": session_id, 
+            "transcript": transcript
+        }
+    except Exception as e:
+        logger.error(f"Error in end_call: {str(e)}")
+        logger.error(traceback.format_exc())
+        return {
+            "success": False,
+            "session_id": session_id,
+            "error": str(e)
+        }
+    finally:
+        # Clean up connection
+        if session_id in active_connections:
+            del active_connections[session_id]
+            logger.info(f"Removed session {session_id} from active connections")
