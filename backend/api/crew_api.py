@@ -109,9 +109,21 @@ async def process_loan_application(user_inputs: dict):
         planning=True  # Enable planning feature
     )
 
-    result = await crew.kickoff()
+    result = crew.kickoff()
     
+    # Format the response to match expected structure
     return {
-        "loan_options": result.tasks_output[0].raw,
-        "risk_analysis": result.tasks_output[1].raw
+        "loan_options": {
+            "raw_text": result.tasks_output[0].raw,
+            "recommendations": [],
+            "products": [],
+            "terms": []
+        },
+        "risk_analysis": {
+            "raw_text": result.tasks_output[1].raw,
+            "summary": "",
+            "risk_score": 0,
+            "risk_level": "Medium",
+            "recommendations": []
+        }
     }
