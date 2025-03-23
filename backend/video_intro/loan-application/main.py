@@ -308,7 +308,7 @@ def generate_journey_structure():
         "loan_type": {
             "title": translations["loan_type_title"],
             "description": translations["loan_type_description"],
-            "video_path": r'C:\Users\Samyak Varia\Downloads\sc\2ND VID.mp4',  # This could be language-specific
+            "video_path": "videos\\english\\video2.mp4",  # This could be language-specific
             "options": translations["loan_types"]
         },
         "loan_info": {
@@ -319,7 +319,7 @@ def generate_journey_structure():
         "thank_you": {
             "title": translations["thank_you_title"],
             "description": translations["thank_you_description"],
-            "video_path": r'C:\Users\Samyak Varia\Downloads\sc\4TH VID.mp4',  # This could be language-specific
+            "video_path": "videos/english/video4.mp4",  # This could be language-specific
             "next_step": "chatbot"  # After thank you, redirect to chatbot
         }
     }
