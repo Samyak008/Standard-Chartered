@@ -3,9 +3,11 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 import os
-
+from langchain_openai import ChatOpenAI
 # Load environment variables
 load_dotenv()
+os.environ["OPENAI_API_KEY"] = "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"
+
 
 # Streamlit app title
 st.title("Loan Advisor Bot")
@@ -18,10 +20,15 @@ income = st.text_input("Annual Income")
 
 # Initialize the ChatGroq model
 groq_api_key = os.getenv("GROQ_API_KEY")
-chat = ChatGroq(
-    groq_api_key=groq_api_key,
-    model_name="llama3-8b-8192",
-    temperature=0.7
+
+# chat = ChatGroq(
+#     groq_api_key=groq_api_key,
+#     model_name="llama3-8b-8192",
+#     temperature=0.7
+# )
+chat = ChatOpenAI(
+    model_name="gpt-4o-mini",
+    temperature=0.4
 )
 
 # Create a chat prompt template
