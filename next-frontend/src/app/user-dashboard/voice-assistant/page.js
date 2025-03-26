@@ -505,13 +505,6 @@ export default function VoiceAssistant() {
             {/* AI Assistant Card */}
             <div className="w-full md:w-1/2 bg-blue-600/10 backdrop-blur-md p-6 rounded-xl border border-blue-500/30 flex items-center space-x-4">
               <div className="relative">
-                <Image
-                  src="/ai-avatar.png" // Replace with your actual avatar
-                  alt="AI Assistant"
-                  width={65}
-                  height={65}
-                  className="rounded-full"
-                />
                 {isSpeaking && (
                   <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full animate-pulse"></span>
                 )}
@@ -530,13 +523,6 @@ export default function VoiceAssistant() {
 
             {/* User Card */}
             <div className="w-full md:w-1/2 bg-purple-600/10 backdrop-blur-md p-6 rounded-xl border border-purple-500/30 flex items-center space-x-4">
-              <Image
-                src="/user-avatar.png" // Replace with actual user avatar
-                alt="User"
-                width={65}
-                height={65}
-                className="rounded-full"
-              />
               <div>
                 <h3 className="text-lg font-medium text-white">
                   {session.user?.name || "User"}
@@ -929,7 +915,7 @@ export default function VoiceAssistant() {
           )}
 
         {/* Instructions Panel */}
-        <div className="w-full bg-gray-900/30 backdrop-blur-sm border border-gray-700/30 rounded-xl p-6 mt-8">
+        {/* <div className="w-full bg-gray-900/30 backdrop-blur-sm border border-gray-700/30 rounded-xl p-6 mt-8">
           <h3 className="text-lg font-semibold text-white mb-3">
             How to use the Voice Assistant
           </h3>
@@ -966,10 +952,10 @@ export default function VoiceAssistant() {
               • What documents do I need for a car loan application?
             </p>
           </div>
-        </div>
+        </div> */}
 
         {/* Debug Panel - only show in development */}
-        {process.env.NODE_ENV === "development" && (
+        {/* {process.env.NODE_ENV === "development" && (
           <div className="w-full mt-8 bg-black/60 backdrop-blur-sm border border-yellow-500/30 rounded-xl p-4">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-yellow-400 font-mono">Debug Info</h3>
@@ -1000,7 +986,7 @@ export default function VoiceAssistant() {
               )}
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </DashboardLayout>
   );

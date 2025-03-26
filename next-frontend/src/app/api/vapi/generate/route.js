@@ -66,7 +66,6 @@ export async function POST(request) {
     const { generateText } = await import("ai");
     const { google } = await import("@ai-sdk/google");
 
-    // Format the prompt for loan suggestions
     const prompt = `You are Loanly's AI financial advisor. Based on the following client profile, suggest the most suitable loan types from the available options. Provide reasoning for your suggestions.
 
 User Profile:
