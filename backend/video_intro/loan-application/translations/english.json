@@ -1,0 +1,69 @@
+{
+    "welcome_title": "Welcome to Standard Chartered Bank",
+    "welcome_description": "Please select an option to continue.",
+    "language_selector": "Choose your preferred language:",
+    "intro_options": [
+        {
+            "id": "new_loan",
+            "title": "Apply for a New Loan",
+            "description": "Start a new loan application process",
+            "video_path": "videos/english/1ST VID.mp4",
+            "next_step": "loan_type"
+        },
+        {
+            "id": "check_status",
+            "title": "Check Application Status",
+            "description": "Check the status of your existing application",
+            "video_path": "videos/english/check_status.mp4",
+            "next_step": "status_check"
+        }
+    ],
+    "status_check_title": "Application Status Check",
+    "status_check_description": "Please enter your application reference number to check status.",
+    "reference_number_placeholder": "Enter your application reference number",
+    "check_status_button": "Check Status with Advisor",
+    "loan_type_title": "Select Your Loan Type",
+    "loan_type_description": "Choose the type of loan that fits your needs.",
+    "loan_types": [
+        {
+            "id": "home",
+            "title": "Home Loan",
+            "description": "Finance your dream home with competitive interest rates",
+            "video_path": "videos/english/3RD VID.mp4",
+            "next_step": "loan_info"
+        },
+        {
+            "id": "car",
+            "title": "Car Loan",
+            "description": "Drive your dream car with affordable financing",
+            "video_path": "videos/english/3RD VID.mp4",
+            "next_step": "loan_info"
+        },
+        {
+            "id": "education",
+            "title": "Education Loan",
+            "description": "Invest in your future with education financing",
+            "video_path": "videos/english/3RD VID.mp4",
+            "next_step": "loan_info"
+        },
+        {
+            "id": "business",
+            "title": "Business Loan",
+            "description": "Grow your business with our financial solutions",
+            "video_path": "videos/english/3RD VID.mp4",
+            "next_step": "loan_info"
+        }
+    ],
+    "loan_info_title": "Loan Information",
+    "loan_info_description": "Here's more information about your selected loan type.",
+    "continue_button": "Continue to Next Steps",
+    "thank_you_title": "Thank You & Next Steps",
+    "thank_you_description": "Thank you for your interest. Let's proceed with document verification and KYC.",
+    "continue_to_advisor": "Continue to Loan Advisor",
+    "redirecting_message": "Video completed. You'll be redirected to the Loan Advisor shortly...",
+    "start_over": "Start Over",
+    "your_selection": "Your Selection",
+    "selected_action": "Selected Action",
+    "loan_type_label": "Loan Type",
+    "kyc_message": "We'll need to verify your documents and complete KYC before proceeding."
+}

@@ -37,7 +37,8 @@ torch
 langchain
 langchain-community
 langchain-openai
-langchain-qroq
+langchain-groq
 
-
+crewai
+crewai[tools]
 starlette

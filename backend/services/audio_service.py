@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 # Store transcriptions
 transcriptions: Dict[str, List[str]] = {}
-
+    
 # Load Whisper model (small for faster processing)
 try:
     whisper_model = whisper.load_model("small")

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Verification System</title>
+    <link rel="stylesheet" href="../static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Face Verification System</h1>
+            <p class="subtitle">Secure identity verification using facial recognition</p>
+        </header>
+        
+        <div class="main-content">
+            <section class="setup-section">
+                <h2>Setup Reference Image</h2>
+                <div class="upload-container" id="referenceUploadContainer">
+                    <div class="upload-icon">📷</div>
+                    <p class="upload-text">Upload a clear photo of your face to use as a reference</p>
+                    <p class="upload-text">Click or drag & drop</p>
+                    <input type="file" id="referenceInput" class="file-input" accept="image/*">
+                    <button class="upload-btn">Choose File</button>
+                </div>
+                
+                <div class="image-preview-container">
+                    <div class="preview-card">
+                        <div class="preview-header">Reference Image</div>
+                        <div class="preview-placeholder" id="referencePlaceholder"></div>
+                        <img id="referencePreview" class="preview-image" style="display: none;">
+                    </div>
+                </div>
+            </section>
+            
+            <section class="verification-section">
+                <h2>Verify Your Identity</h2>
+                <div class="upload-container" id="verifyUploadContainer">
+                    <div class="upload-icon">🔍</div>
+                    <p class="upload-text">Upload a current photo to verify against the reference</p>
+                    <p class="upload-text">Click or drag & drop</p>
+                    <input type="file" id="verifyInput" class="file-input" accept="image/*">
+                    <button class="upload-btn">Choose File</button>
+                </div>
+                
+                <div class="image-preview-container">
+                    <div class="preview-card">
+                        <div class="preview-header">Verification Image</div>
+                        <div class="preview-placeholder" id="verifyPlaceholder"></div>
+                        <img id="verifyPreview" class="preview-image" style="display: none;">
+                    </div>
+                </div>
+                
+                <div class="video-feed-container">
+                    <h2>Live Video Feed Verification</h2>
+                    <video id="videoFeed" width="640" height="480" autoplay playsinline></video>
+                    <button id="captureBtn" disabled>Capture and Verify</button>
+                </div>
+                
+                <div class="loader" id="loader"></div>
+                
+                <div class="verification-result result-success" id="successResult">
+                    <div class="result-icon">✓</div>
+                    <div class="result-text">
+                        <div class="result-title">Identity Verified</div>
+                    </div>
+                </div>
+                
+                <div class="verification-result result-failure" id="failureResult">
+                    <div class="result-icon">✗</div>
+                    <div class="result-text"></div>
+                </div>
+                
+                <div class="actions">
+                    <button class="btn btn-primary btn-large" id="verifyBtn" disabled>Verify</button>
+                    <button class="btn btn-outline" id="resetBtn">Reset</button>
+                </div>
+                
+                <div class="tips">
+                    <div class="tips-title">Tips for better verification:</div>
+                    <ul class="tips-list">
+                        <li>Ensure good lighting conditions.</li>
+                        <li>Keep your face centered in the frame.</li>
+                        <li>Avoid wearing sunglasses or hats.</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+        
+        <footer>
+            Face Verification System • Secure Identity Authentication
+        </footer>
+    </div>
+    
+    <script src="../static/js/video-feed.js"></script>
+    <script src="../static/js/face-verify.js"></script>
+</body>
+</html>

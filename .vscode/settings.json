@@ -1,0 +1,6 @@
+{
+    "search.useIgnoreFiles": true,
+    "python.analysis.extraPaths": [
+        "./backend/models"
+    ]
+}
