@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 import json
 # Load environment variables
 load_dotenv()
-os.environ["SERPER_API_KEY"] = "e92edcc2cd3ee13129db6fe3aec941cf46f696aa" # serper.dev API key
-os.environ["OPENAI_API_KEY"] = "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" # OpenAI API key
+os.environ["SERPER_API_KEY"] =  # serper.dev API key
+os.environ["OPENAI_API_KEY"] =  # OpenAI API key
 # Initialize CrewAI tools
 search_tool = SerperDevTool()
 web_search_tool = WebsiteSearchTool()
